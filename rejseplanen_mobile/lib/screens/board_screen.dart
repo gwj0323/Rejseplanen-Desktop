@@ -5,6 +5,7 @@ import '../config/app_config.dart';
 import '../models/station.dart';
 import '../models/departure.dart';
 import '../services/api_client.dart';
+import '../services/location_service.dart';
 import '../i18n/translations.dart';
 import '../widgets/station_picker.dart';
 import '../widgets/transit_badge.dart';
@@ -63,6 +64,46 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
         Duration(seconds: config.autoRefreshInterval),
         (_) => _fetchBoard(showIndicator: false),
       );
+    }
+  }
+
+  bool _locatingGps = false;
+
+  Future<void> _locateCurrentStation() async {
+    setState(() => _locatingGps = true);
+    final loc = await LocationService.getCurrentPosition();
+    if (!mounted) return;
+
+    if (loc.isSuccess && loc.lat != null && loc.lon != null) {
+      final config = Provider.of<AppConfig>(context, listen: false);
+      final client = RejseplanenApiClient(config);
+      final res = await client.nearbyStops(loc.lat!, loc.lon!, maxNo: 6);
+      if (mounted) {
+        setState(() => _locatingGps = false);
+        if (res.data.isNotEmpty) {
+          final nearest = res.data.first;
+          setState(() => _currentStation = nearest);
+          _fetchBoard();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("${I18n.t(context, "station_get_current_location")}: ${nearest.name}"),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(I18n.t(context, "station_empty_nearby"))),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() => _locatingGps = false);
+        final errKey = loc.errorKey ?? "location_error";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(I18n.t(context, errKey))),
+        );
+      }
     }
   }
 
@@ -180,6 +221,18 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: _locatingGps
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.my_location, size: 20),
+                  tooltip: I18n.t(context, "station_get_current_location"),
+                  onPressed: _locatingGps ? null : _locateCurrentStation,
+                ),
+                const SizedBox(width: 6),
                 IconButton.filledTonal(
                   icon: Icon(
                     config.isFavoriteStation(_currentStation.id) ? Icons.star : Icons.star_border,

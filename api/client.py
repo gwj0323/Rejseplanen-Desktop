@@ -69,7 +69,7 @@ class RejseplanenClient:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "Rejseplanen-WinUI3-Client/1.0",
+            "User-Agent": "RejseNu-Desktop/1.0",
             "Accept": "application/json"
         })
         self.last_error: Optional[str] = None

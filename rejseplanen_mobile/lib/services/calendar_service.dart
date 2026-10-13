@@ -82,7 +82,7 @@ class CalendarService {
         }
       }
       buffer.writeln('----------------------------------------');
-      buffer.writeln('Rejseplanen App');
+      buffer.writeln('RejseNu');
 
       final firstPlatform = trip.legs.isNotEmpty && trip.legs.first.origin.track.isNotEmpty && trip.legs.first.origin.track != '-'
           ? ' (${I18n.tr("trip_platform", lang)} ${trip.legs.first.origin.track})'
@@ -90,7 +90,7 @@ class CalendarService {
 
       final firstLegName = trip.legs.isNotEmpty ? trip.legs.first.name : '';
 
-      final String eventTitle = 'Rejseplanen: ${origin.name} ➔ ${destination.name}' +
+      final String eventTitle = 'RejseNu: ${origin.name} ➔ ${destination.name}' +
           (firstLegName.isNotEmpty ? ' [$firstLegName]' : '');
 
       final event = Event(

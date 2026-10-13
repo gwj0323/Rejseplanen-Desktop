@@ -5,7 +5,7 @@ import '../config/app_config.dart';
 class I18n {
   static const Map<String, Map<String, String>> _translations = {
     "zh_CN": {
-      "app_title": "Rejseplanen",
+      "app_title": "RejseNu",
       "nav_trip": "行程规划",
       "nav_board": "实时大屏",
       "nav_station": "站点查询",
@@ -72,7 +72,7 @@ class I18n {
       "reminder_perm_banner_desc": "请开启通知权限，以便接收行程出发、换乘与到站提醒",
       "reminder_perm_enable_btn": "去开启",
       "reminder_perm_dialog_title": "需要通知权限",
-      "reminder_perm_dialog_body": "手机系统尚未允许 Rejseplanen 发送通知。请在系统设置中开启「允许通知」，否则将无法收到行程提醒。",
+      "reminder_perm_dialog_body": "手机系统尚未允许 RejseNu 发送通知。请在系统设置中开启「允许通知」，否则将无法收到行程提醒。",
       "reminder_perm_open_settings": "打开系统设置",
       "common_cancel": "取消",
       "reminder_dep_preview": "预览：预计将在发车前 {mins} 分钟提醒前往站台乘车",
@@ -226,7 +226,7 @@ class I18n {
       "accent_custom_hint": "如 #005776",
       "accent_custom_error": "请输入有效的十六进制色值 (如 #005776)",
       "settings_about_group": "关于",
-      "settings_about_desc": "Rejseplanen 丹麦公共出行客户端 (Flutter Android 版)",
+      "settings_about_desc": "RejseNu - 丹麦公共出行客户端 (Flutter 移动版)",
       "settings_about_author": "作者: gwj0323",
       "settings_saved_msg": "设置已保存",
 
@@ -245,7 +245,7 @@ class I18n {
     },
 
     "en_US": {
-      "app_title": "Rejseplanen",
+      "app_title": "RejseNu",
       "nav_trip": "Planner",
       "nav_board": "Live Board",
       "nav_station": "Stations",
@@ -312,7 +312,7 @@ class I18n {
       "reminder_perm_banner_desc": "Enable notification permission to receive departure and arrival alerts",
       "reminder_perm_enable_btn": "Enable",
       "reminder_perm_dialog_title": "Notification Permission Required",
-      "reminder_perm_dialog_body": "Notifications are disabled for Rejseplanen. Please enable notifications in system settings to receive timely trip alerts.",
+      "reminder_perm_dialog_body": "Notifications are disabled for RejseNu. Please enable notifications in system settings to receive timely trip alerts.",
       "reminder_perm_open_settings": "Open Settings",
       "common_cancel": "Cancel",
       "reminder_dep_preview": "Preview: Will alert {mins} mins before departure to head to the track",
@@ -466,7 +466,7 @@ class I18n {
       "accent_custom_hint": "e.g. #005776",
       "accent_custom_error": "Please enter a valid hex color code (e.g. #005776)",
       "settings_about_group": "About",
-      "settings_about_desc": "Rejseplanen Denmark Transit Companion (Flutter Android)",
+      "settings_about_desc": "RejseNu - Denmark Transit Companion (Flutter Mobile)",
       "settings_about_author": "Author: gwj0323",
       "settings_saved_msg": "Settings saved",
 
@@ -485,7 +485,7 @@ class I18n {
     },
 
     "da_DK": {
-      "app_title": "Rejseplanen",
+      "app_title": "RejseNu",
       "nav_trip": "Rejseplan",
       "nav_board": "Afgange",
       "nav_station": "Stationer",
@@ -552,7 +552,7 @@ class I18n {
       "reminder_perm_banner_desc": "Slå notifikationer til for at modtage afgangs- og ankomstadvarsler",
       "reminder_perm_enable_btn": "Aktivér",
       "reminder_perm_dialog_title": "Notifikationsadgang påkrævet",
-      "reminder_perm_dialog_body": "Notifikationer er deaktiveret for Rejseplanen. Tillad venligst notifikationer i systemindstillinger.",
+      "reminder_perm_dialog_body": "Notifikationer er deaktiveret for RejseNu. Tillad venligst notifikationer i systemindstillinger.",
       "reminder_perm_open_settings": "Åbn indstillinger",
       "common_cancel": "Annuller",
       "reminder_dep_preview": "Forhåndsvisning: Påmindelse sendes {mins} min før afgang for at gå til sporet",
@@ -706,7 +706,7 @@ class I18n {
       "accent_custom_hint": "f.eks. #005776",
       "accent_custom_error": "Indtast venligst en gyldig 6-cifret hex-kode (f.eks. #005776)",
       "settings_about_group": "Om",
-      "settings_about_desc": "Rejseplanen app til kollektiv trafik i Danmark (Flutter Android).",
+      "settings_about_desc": "RejseNu app til kollektiv trafik i Danmark (Flutter Mobile).",
       "settings_about_author": "Forfatter: gwj0323",
       "settings_saved_msg": "Gemt",
 
