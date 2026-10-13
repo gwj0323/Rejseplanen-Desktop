@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/station.dart';
+import '../models/trip.dart';
 
 class AppConfig extends ChangeNotifier {
   static const String _keySettings = 'rejseplanen_settings';
@@ -85,6 +86,34 @@ class AppConfig extends ChangeNotifier {
     } else {
       _activeTripReminderIds.remove(tripIdx);
     }
+    notifyListeners();
+  }
+
+  String? _activeOngoingTripIdx;
+  TripProposal? _activeOngoingTrip;
+  Station? _activeOngoingOrigin;
+  Station? _activeOngoingDest;
+
+  String? get activeOngoingTripIdx => _activeOngoingTripIdx;
+  TripProposal? get activeOngoingTrip => _activeOngoingTrip;
+  Station? get activeOngoingOrigin => _activeOngoingOrigin;
+  Station? get activeOngoingDest => _activeOngoingDest;
+  bool isOngoingTripActive(String tripIdx) => _activeOngoingTripIdx == tripIdx;
+  bool get hasActiveOngoingTrip => _activeOngoingTripIdx != null;
+
+  void startOngoingTrip(TripProposal trip, Station origin, Station dest) {
+    _activeOngoingTripIdx = trip.idx;
+    _activeOngoingTrip = trip;
+    _activeOngoingOrigin = origin;
+    _activeOngoingDest = dest;
+    notifyListeners();
+  }
+
+  void stopOngoingTrip() {
+    _activeOngoingTripIdx = null;
+    _activeOngoingTrip = null;
+    _activeOngoingOrigin = null;
+    _activeOngoingDest = null;
     notifyListeners();
   }
 

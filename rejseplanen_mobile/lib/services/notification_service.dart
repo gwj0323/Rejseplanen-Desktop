@@ -19,6 +19,11 @@ class NotificationService {
   static const String channelName = '行程提醒 (Trip Reminders)';
   static const String channelDescription = '出发提醒、换乘提醒和下车提醒通知';
 
+  static const String ongoingChannelId = 'rejseplanen_ongoing_trip';
+  static const String ongoingChannelName = '实时行程动态 (Live Trip Tracker)';
+  static const String ongoingChannelDescription = '在通知栏实时展示正在进行的行程状态与到站提醒';
+  static const int ongoingNotificationId = 8888;
+
   Future<void> init() async {
     if (_initialized) return;
 
@@ -74,6 +79,17 @@ class NotificationService {
           showBadge: true,
         );
         await androidPlugin.createNotificationChannel(channel);
+
+        const AndroidNotificationChannel ongoingChannel = AndroidNotificationChannel(
+          ongoingChannelId,
+          ongoingChannelName,
+          description: ongoingChannelDescription,
+          importance: Importance.low,
+          playSound: false,
+          enableVibration: false,
+          showBadge: false,
+        );
+        await androidPlugin.createNotificationChannel(ongoingChannel);
       }
 
       _initialized = true;
@@ -402,6 +418,83 @@ class NotificationService {
     } catch (e) {
       debugPrint('[NotificationService] Error cancelling reminders: $e');
     }
+  }
+
+  /// Show or update a persistent ongoing notification card for the active trip
+  Future<void> showOngoingTripNotification({
+    required TripProposal trip,
+    required Station origin,
+    required Station destination,
+    String lang = 'zh_CN',
+  }) async {
+    await init();
+    await requestPermission();
+
+    // Determine current active or first motorized leg
+    TripLeg? currentLeg;
+    for (var leg in trip.legs) {
+      if (!leg.isWalk) {
+        currentLeg = leg;
+        break;
+      }
+    }
+    currentLeg ??= (trip.legs.isNotEmpty ? trip.legs.first : null);
+
+    final lineName = currentLeg?.name ?? trip.depTime;
+    final trackStr = (currentLeg?.origin.track.isNotEmpty == true && currentLeg!.origin.track != '-')
+        ? ' (${I18n.tr("trip_platform", lang)} ${currentLeg.origin.track})'
+        : '';
+    final nextStop = currentLeg?.destination.name ?? destination.name;
+    final arrTime = currentLeg?.destination.time ?? trip.arrTime;
+
+    final String title = '🚆 ' + I18n.tr('notif_ongoing_title', lang, {
+      'line': lineName + trackStr,
+      'station': nextStop,
+    });
+    final String body = I18n.tr('notif_ongoing_body', lang, {
+      'time': arrTime,
+      'nextStop': nextStop,
+      'dest': destination.name,
+      'arrTime': trip.arrTime,
+    });
+
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      ongoingChannelId,
+      ongoingChannelName,
+      channelDescription: ongoingChannelDescription,
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true, // User cannot swipe away while trip is active
+      autoCancel: false,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.status,
+      visibility: NotificationVisibility.public,
+    );
+
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: false,
+        presentSound: false,
+      ),
+    );
+
+    await _notificationsPlugin.show(
+      ongoingNotificationId,
+      title,
+      body,
+      details,
+      payload: 'ongoing_trip_${trip.idx}',
+    );
+    debugPrint('[NotificationService] Shown ongoing trip card: $title');
+  }
+
+  /// Remove the ongoing trip notification
+  Future<void> stopOngoingTripNotification() async {
+    await _notificationsPlugin.cancel(ongoingNotificationId);
+    debugPrint('[NotificationService] Stopped ongoing trip card');
   }
 
   /// Cancel all pending notifications

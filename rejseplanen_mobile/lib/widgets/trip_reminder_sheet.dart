@@ -49,6 +49,8 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
   bool _enableArr = true;
   int _arrMinutes = 5;
 
+  bool _enableOngoingCard = true;
+
   bool _testing = false;
   bool _hasPermission = true;
 
@@ -370,6 +372,37 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Card 4: Ongoing Trip Live Notification Card (行程常驻后台动态卡片)
+            _buildReminderCard(
+              context: context,
+              icon: Icons.radar,
+              iconColor: Colors.blue.shade700,
+              title: I18n.t(context, "trip_ongoing_start"),
+              subtitle: I18n.t(context, "trip_ongoing_banner_desc"),
+              enabled: _enableOngoingCard,
+              onToggle: (v) => setState(() => _enableOngoingCard = v),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 14, color: Colors.blue.shade700),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        I18n.t(context, "trip_ongoing_banner_desc"),
+                        style: TextStyle(fontSize: 11, color: Colors.blue.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Bottom Action Buttons
@@ -573,6 +606,16 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
 
     config.setTripReminderActive(widget.trip.idx, true);
 
+    if (_enableOngoingCard) {
+      config.startOngoingTrip(widget.trip, widget.origin, widget.destination);
+      await notificationService.showOngoingTripNotification(
+        trip: widget.trip,
+        origin: widget.origin,
+        destination: widget.destination,
+        lang: config.effectiveLanguage,
+      );
+    }
+
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -597,6 +640,11 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
     final notificationService = NotificationService();
     await notificationService.cancelTripReminders(widget.trip);
     config.setTripReminderActive(widget.trip.idx, false);
+
+    if (config.isOngoingTripActive(widget.trip.idx)) {
+      await notificationService.stopOngoingTripNotification();
+      config.stopOngoingTrip();
+    }
 
     if (mounted) {
       Navigator.pop(context);
