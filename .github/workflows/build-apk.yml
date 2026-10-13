@@ -32,13 +32,32 @@ jobs:
       - name: Verify Flutter installation
         run: flutter doctor -v
 
+      - name: Initialize Android Platform
+        working-directory: rejseplanen_mobile
+        run: |
+          rm -rf android
+          flutter create . --platforms=android --org com.rejseplanen
+          python3 -c "
+          p = 'android/app/src/main/AndroidManifest.xml'
+          with open(p, 'r') as f:
+              c = f.read()
+          perms = '    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>\n'
+          c = c.replace('<application', perms + '    <application')
+          with open(p, 'w') as f:
+              f.write(c)
+          "
+
       - name: Install dependencies
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
+      - name: Analyze Dart code
+        working-directory: rejseplanen_mobile
+        run: flutter analyze --no-fatal-infos
+
       - name: Build Android Release APK
         working-directory: rejseplanen_mobile
-        run: flutter build apk --release
+        run: flutter build apk --release --verbose
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
