@@ -116,11 +116,16 @@ class I18n {
       "settings_base_url_label": "接口地址",
       "settings_base_url_desc": "默认: https://www.rejseplanen.dk/api",
       "settings_test_conn_btn": "测试连接",
+      "settings_save_btn": "保存配置",
+      "settings_api_status_saved": "已保存密钥 (已就绪)",
+      "settings_api_status_none": "未配置密钥 (将使用模拟数据)",
+      "settings_saved_feedback": "配置已成功保存！",
       "settings_mock_fallback_label": "离线演示数据",
       "settings_mock_fallback_desc": "无网络或未配置 Key 时使用离线模拟数据",
       "settings_labs_link_btn": "申请 API Key (labs.rejseplanen.dk)",
       "settings_appearance_group": "外观与语言",
       "settings_lang_label": "语言",
+      "lang_system": "跟随系统",
       "settings_theme_label": "主题模式",
       "theme_auto": "跟随系统",
       "theme_light": "浅色",
@@ -272,11 +277,16 @@ class I18n {
       "settings_base_url_label": "Base URL",
       "settings_base_url_desc": "Default: https://www.rejseplanen.dk/api",
       "settings_test_conn_btn": "Test Connection",
+      "settings_save_btn": "Save Settings",
+      "settings_api_status_saved": "API Key Saved (Ready)",
+      "settings_api_status_none": "No API Key (Using demo data)",
+      "settings_saved_feedback": "Settings saved successfully!",
       "settings_mock_fallback_label": "Offline Demo Data",
       "settings_mock_fallback_desc": "Use demo data when offline or without key",
       "settings_labs_link_btn": "Get API Key (labs.rejseplanen.dk)",
       "settings_appearance_group": "Appearance",
       "settings_lang_label": "Language",
+      "lang_system": "System Default",
       "settings_theme_label": "Theme Mode",
       "theme_auto": "Follow System",
       "theme_light": "Light",
@@ -428,11 +438,16 @@ class I18n {
       "settings_base_url_label": "Basis-URL",
       "settings_base_url_desc": "Standard: https://www.rejseplanen.dk/api",
       "settings_test_conn_btn": "Test",
+      "settings_save_btn": "Gem indstillinger",
+      "settings_api_status_saved": "API-nøgle gemt (Klar)",
+      "settings_api_status_none": "Ingen API-nøgle (Bruger demo-data)",
+      "settings_saved_feedback": "Indstillinger gemt!",
       "settings_mock_fallback_label": "Offline demo-data",
       "settings_mock_fallback_desc": "Brug demo-data hvis offline eller uden nøgle",
       "settings_labs_link_btn": "Hent API-nøgle (labs.rejseplanen.dk)",
       "settings_appearance_group": "Udseende",
       "settings_lang_label": "Sprog",
+      "lang_system": "Følg system",
       "settings_theme_label": "Tema",
       "theme_auto": "Følg system",
       "theme_light": "Lyst",
@@ -474,7 +489,7 @@ class I18n {
   };
 
   static String t(BuildContext context, String key) {
-    final lang = Provider.of<AppConfig>(context, listen: true).language;
+    final lang = Provider.of<AppConfig>(context, listen: true).effectiveLanguage;
     return _translations[lang]?[key] ??
         _translations['en_US']?[key] ??
         _translations['zh_CN']?[key] ??
@@ -482,7 +497,23 @@ class I18n {
   }
 
   static String tr(String key, String lang) {
-    return _translations[lang]?[key] ??
+    String resolved = lang;
+    if (resolved == 'system') {
+      try {
+        final locale = WidgetsBinding.instance.platformDispatcher.locale;
+        final code = locale.languageCode.toLowerCase();
+        if (code == 'zh') {
+          resolved = 'zh_CN';
+        } else if (code == 'da') {
+          resolved = 'da_DK';
+        } else {
+          resolved = 'en_US';
+        }
+      } catch (_) {
+        resolved = 'en_US';
+      }
+    }
+    return _translations[resolved]?[key] ??
         _translations['en_US']?[key] ??
         _translations['zh_CN']?[key] ??
         key;

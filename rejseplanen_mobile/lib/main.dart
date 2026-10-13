@@ -6,9 +6,11 @@ import 'screens/main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final config = AppConfig();
+  await config.loadSettings();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppConfig(),
+    ChangeNotifierProvider.value(
+      value: config,
       child: const RejseplanenApp(),
     ),
   );
