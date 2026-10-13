@@ -1,82 +1,54 @@
-# Rejseplanen Mobile (Android / iOS)
+# Rejseplanen Mobile
 
-基于 **Flutter 3** 构建的丹麦公共交通移动端 App，接入官方 **Rejseplanen REST API 2.0**，支持离线演示模式与多语言切换。
+基于 Flutter 开发的丹麦公共交通移动端客户端（Android），接入官方 [Rejseplanen REST API](https://labs.rejseplanen.dk/)。
 
----
+## 功能
 
-## 📱 核心功能特性
+- **行程规划**：支持全丹麦公共交通（火车、S-tog、Metro、公交）路线规划，查看详细换乘步骤、站台与延误信息。
+- **行程通知提醒**：可开启出发提醒、换乘提醒与到站提醒，通知栏实时推送避免坐过站。
+- **实时大屏**：查询指定车站的实时发车与到达大屏，显示准点/晚点状态，支持 30 秒自动刷新。
+- **站点与附近车站**：支持站名模糊搜索，并可通过手机 GPS 定位自动查找附近的公共交通站点。
+- **收藏与历史**：常用路线与车站快速收藏，自动记录最近查询历史。
+- **外观与语言**：
+  - 支持简体中文、English、Dansk 实时切换（默认跟随系统）。
+  - 支持浅色、深色及跟随系统主题。
+  - 支持 Material You 动态壁纸取色（Android 12+）、多款北欧预设色及自定义 Hex 色值。
+- **离线演示**：未配置 API Key 时自动启用内置模拟数据，便于离线体验。
 
-1. **行程规划 (Journey Planner)**
-   - 起点与终点站联想选择、一键对调。
-   - 出发/到达时间切换、日期与时间选择器。
-   - 交通方式过滤：火车 (IC/RE)、S-tog、Metro、公交换乘过滤。
-   - 详细换乘时间线：每段线路官方标识（S-tog/Metro 纯正配色）、站台/Spor 提示、延误与准点状态。
+## 安装包下载
 
-2. **实时大屏 (Live Board)**
-   - 实时发车 (Departures) 与到达 (Arrivals) 切换。
-   - 延误分钟数实时计算（红色标明晚点、绿色准点）。
-   - 30 秒自动定时刷新与下拉刷新 (Pull-to-refresh)。
+项目配置了 GitHub Actions 自动化编译，无需本地搭建 Android 开发环境即可获取安装包：
 
-3. **站点查询与 GPS 探测 (Station Explorer)**
-   - 车站名称模糊联想搜索。
-   - 基于经纬度的周边停靠站探测（内置哥本哈根、奥胡斯市中心快捷定位）。
-   - 一键将站点发送至“实时大屏”或设为“行程起点”。
+1. 打开本仓库的 [Actions](https://github.com/gwj0323/Rejseplanen-Desktop/actions) 页面。
+2. 点击最新一次成功的 **Build Android APK** 工作流。
+3. 在页面底部的 **Artifacts** 区域下载 `rejseplanen-release-apk`，解压后即可得到 `app-release.apk`。
 
-4. **常用收藏与历史 (Favorites & History)**
-   - 常用车站与常用路线一键快速查询。
-   - 自动记录最近搜索历史。
+## 本地开发与编译
 
-5. **设置与 API 管理 (Settings)**
-   - `accessId` 密钥配置与一键“测试连接”诊断。
-   - 离线演示数据开关（断网或无 Key 时无缝回退）。
-   - 多语言支持：简体中文、English、Dansk 实时切换。
-   - 深色 / 浅色 / 跟随系统主题切换。
+### 前置要求
+- [Flutter SDK 3.22+](https://flutter.dev/docs/get-started/install)
+- Android SDK (API 34)
 
----
-
-## 🛠️ 技术架构
-
-- **UI 框架**：Flutter (Material 3)
-- **状态管理**：`provider` (`ChangeNotifier`)
-- **本地存储**：`shared_preferences`
-- **网络请求**：`http` (针对 Rejseplanen 官方 REST API 2.0 及 XML/JSON 兼容处理)
-- **多语言**：内置轻量级无依赖三语词条系统
-
----
-
-## 🚀 如何运行与打包 APK
-
-### 方式一：使用 GitHub Actions 自动云端打包（强烈推荐，无需在本地安装几十G的 Android SDK）
-
-本仓库已配置好自动化打包工作流（位于 `.github/workflows/build-apk.yml`）：
-1. 将本代码仓库提交推送到你的 GitHub 仓库（`main` 或 `master` 分支）。
-2. 在 GitHub 网页端进入 **Actions** 标签页。
-3. 可以在 **Build Android APK** 工作流中看到自动执行编译打包。
-4. 编译完成后，在工作流页面下方的 **Artifacts** 直接下载 `rejseplanen-release-apk`，解压即为可直接在安卓手机安装的 `.apk` 安装包！
-
----
-
-### 方式二：在本地电脑运行与编译
-
-#### 1. 安装 Flutter 环境
-下载并安装 [Flutter SDK](https://docs.flutter.dev/get-started/install)。
-
-#### 2. 进入目录并安装依赖
+### 运行步骤
 ```bash
+# 进入移动端目录
 cd rejseplanen_mobile
+
+# 获取依赖
 flutter pub get
-```
 
-#### 3. 运行调试
-在手机连接 USB 调试或启动安卓模拟器后执行：
-```bash
+# 运行调试（连接手机或启动模拟器）
 flutter run
-```
 
-#### 4. 本地打包 Release APK
-```bash
+# 打包 Release APK
 flutter build apk --release
 ```
-生成的文件位于：
-`rejseplanen_mobile/build/app/outputs/flutter-apk/app-release.apk`
-直接将该 apk 发送到安卓手机即可安装使用。
+
+打包生成的 APK 位于：
+`build/app/outputs/flutter-apk/app-release.apk`
+
+## API 配置说明
+
+软件内置了离线演示数据。如需获取真实实时数据：
+1. 前往 [Rejseplanen Labs](https://labs.rejseplanen.dk/) 注册并申请免费的 API `accessId`。
+2. 打开 App，在「设置」页面填入密钥并保存，也可以点击「测试连接」验证网络与密钥有效性。
