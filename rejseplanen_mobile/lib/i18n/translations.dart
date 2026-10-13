@@ -79,6 +79,15 @@ class I18n {
       "station_action_plan": "设为起点",
       "station_id": "编号",
       "station_coords": "坐标",
+      "station_get_current_location": "定位当前位置",
+      "station_locating": "正在获取 GPS 定位...",
+      "location_services_disabled": "请先在手机设置中开启定位服务 (GPS)",
+      "location_permission_denied": "定位权限被拒绝，无法获取当前位置",
+      "location_permission_denied_forever": "定位权限已被永久禁用，请在手机系统应用设置中开启",
+      "location_timeout": "获取 GPS 定位超时，请重试",
+      "location_error": "定位失败，请检查手机定位状态",
+      "use_gps_nearby": "使用当前 GPS 定位寻找附近车站",
+      "current_location_coords": "当前坐标",
 
       // Favorites
       "fav_title": "收藏与历史",
@@ -204,6 +213,15 @@ class I18n {
       "station_action_plan": "Depart Here",
       "station_id": "ID",
       "station_coords": "Coordinates",
+      "station_get_current_location": "Get Current Location",
+      "station_locating": "Acquiring GPS location...",
+      "location_services_disabled": "Please enable Location Services (GPS) in system settings",
+      "location_permission_denied": "Location permission denied",
+      "location_permission_denied_forever": "Location permission permanently denied. Please enable in Settings.",
+      "location_timeout": "GPS location request timed out",
+      "location_error": "Location error, please check device location status",
+      "use_gps_nearby": "Use current GPS location to find nearby stations",
+      "current_location_coords": "Current coordinates",
 
       // Favorites
       "fav_title": "Favorites & History",
@@ -329,6 +347,15 @@ class I18n {
       "station_action_plan": "Rejs herfra",
       "station_id": "ID",
       "station_coords": "Koordinater",
+      "station_get_current_location": "Hent nuværende position",
+      "station_locating": "Henter GPS-position...",
+      "location_services_disabled": "Slå venligst placeringstjenester (GPS) til i systemindstillinger",
+      "location_permission_denied": "Placeringsadgang nægtet",
+      "location_permission_denied_forever": "Placeringsadgang permanent nægtet. Tillad venligst i indstillinger.",
+      "location_timeout": "Tidsudløb ved GPS-positionering",
+      "location_error": "Placeringsfejl, tjek venligst placeringstilstand",
+      "use_gps_nearby": "Brug nuværende GPS-position til at finde stationer i nærheden",
+      "current_location_coords": "Nuværende koordinater",
 
       // Favorites
       "fav_title": "Favoritter og historik",

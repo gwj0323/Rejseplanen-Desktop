@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/station.dart';
 import '../services/api_client.dart';
+import '../services/location_service.dart';
 import '../i18n/translations.dart';
 import 'board_screen.dart';
 import 'trip_screen.dart';
@@ -19,11 +20,13 @@ class _StationScreenState extends State<StationScreen> {
   List<Station> _searchResults = [];
   bool _searching = false;
 
-  // Nearby coordinates
+  // Nearby coordinates (default Copenhagen Central)
   double _lat = 55.6761;
   double _lon = 12.5683;
+  String? _currentPositionLabel;
   List<Station> _nearbyResults = [];
   bool _loadingNearby = false;
+  bool _locatingGps = false;
 
   @override
   void initState() {
@@ -57,7 +60,7 @@ class _StationScreenState extends State<StationScreen> {
   void _loadNearby() {
     setState(() => _loadingNearby = true);
     final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
-    client.nearbyStops(_lat, _lon, maxNo: 8).then((res) {
+    client.nearbyStops(_lat, _lon, maxNo: 10).then((res) {
       if (mounted) {
         setState(() {
           _nearbyResults = res.data;
@@ -67,10 +70,38 @@ class _StationScreenState extends State<StationScreen> {
     });
   }
 
-  void _setPreset(double lat, double lon) {
+  Future<void> _locateCurrentPosition() async {
+    setState(() => _locatingGps = true);
+    final locResult = await LocationService.getCurrentPosition();
+    if (!mounted) return;
+
+    if (locResult.isSuccess && locResult.lat != null && locResult.lon != null) {
+      setState(() {
+        _lat = locResult.lat!;
+        _lon = locResult.lon!;
+        _currentPositionLabel =
+            "${locResult.lat!.toStringAsFixed(4)}, ${locResult.lon!.toStringAsFixed(4)}";
+        _locatingGps = false;
+      });
+      _loadNearby();
+    } else {
+      setState(() => _locatingGps = false);
+      final errorKey = locResult.errorKey ?? "location_error";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(I18n.t(context, errorKey)),
+          backgroundColor: Colors.orange.shade800,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _setPreset(double lat, double lon, String name) {
     setState(() {
       _lat = lat;
       _lon = lon;
+      _currentPositionLabel = name;
     });
     _loadNearby();
   }
@@ -133,49 +164,79 @@ class _StationScreenState extends State<StationScreen> {
             const Divider(height: 24),
           ],
 
-          // Nearby Stops section
+          // GPS Location Card
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Card(
+              elevation: 0,
+              color: theme.colorScheme.primaryContainer.withOpacity(0.35),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.my_location, size: 20, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Text(
-                      I18n.t(context, "station_nearby_title"),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Icon(Icons.my_location, color: Color(0xFFC72027), size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          I18n.t(context, "station_nearby_title"),
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        FilledButton.tonalIcon(
+                          onPressed: _locatingGps ? null : _locateCurrentPosition,
+                          icon: _locatingGps
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.gps_fixed, size: 16),
+                          label: Text(
+                            _locatingGps
+                                ? I18n.t(context, "station_locating")
+                                : I18n.t(context, "station_get_current_location"),
+                          ),
+                        ),
+                      ],
                     ),
-                    const Spacer(),
-                    if (_loadingNearby)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    if (_currentPositionLabel != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        "${I18n.t(context, "current_location_coords")}: $_currentPositionLabel",
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                       ),
+                    ],
+                    const SizedBox(height: 10),
+                    // Quick city presets
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.location_city, size: 16),
+                          label: Text(I18n.t(context, "station_preset_cph")),
+                          onPressed: () => _setPreset(55.6761, 12.5683, I18n.t(context, "station_preset_cph")),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.location_city, size: 16),
+                          label: Text(I18n.t(context, "station_preset_aarhus")),
+                          onPressed: () => _setPreset(56.1504, 10.2047, I18n.t(context, "station_preset_aarhus")),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                // City presets
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    ActionChip(
-                      avatar: const Icon(Icons.location_city, size: 16),
-                      label: Text(I18n.t(context, "station_preset_cph")),
-                      onPressed: () => _setPreset(55.6761, 12.5683),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.location_city, size: 16),
-                      label: Text(I18n.t(context, "station_preset_aarhus")),
-                      onPressed: () => _setPreset(56.1504, 10.2047),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
+
+          if (_loadingNearby)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: LinearProgressIndicator(),
+            ),
 
           for (var station in _nearbyResults) _buildStationTile(context, station, config),
         ],
@@ -201,7 +262,6 @@ class _StationScreenState extends State<StationScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Favorite button
           IconButton(
             icon: Icon(
               isFav ? Icons.star : Icons.star_border,
@@ -216,7 +276,6 @@ class _StationScreenState extends State<StationScreen> {
               }
             },
           ),
-          // View Board Popup
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (val) {
