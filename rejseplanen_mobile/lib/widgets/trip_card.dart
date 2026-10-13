@@ -49,8 +49,7 @@ class _TripCardState extends State<TripCard> {
             children: [
               // Top Row: Times, Duration, Transfers
               Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     trip.depTime,
