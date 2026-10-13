@@ -69,7 +69,7 @@ class RejseplanenClient:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "RejseNu-Desktop/1.0",
+            "User-Agent": "Spor-Desktop/1.0",
             "Accept": "application/json"
         })
         self.last_error: Optional[str] = None

@@ -13,13 +13,13 @@ void main() async {
   runApp(
     ChangeNotifierProvider.value(
       value: config,
-      child: const RejseNuApp(),
+      child: const SporApp(),
     ),
   );
 }
 
-class RejseNuApp extends StatelessWidget {
-  const RejseNuApp({super.key});
+class SporApp extends StatelessWidget {
+  const SporApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class RejseNuApp extends StatelessWidget {
         }
 
         return MaterialApp(
-          title: 'RejseNu',
+          title: 'Spor',
           debugShowCheckedModeBanner: false,
           themeMode: config.themeMode,
           theme: ThemeData(

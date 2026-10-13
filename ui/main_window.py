@@ -14,7 +14,7 @@ from config import config
 from i18n import t, I18n
 
 class MainWindow(MSFluentWindow):
-    """WinUI 3 Main Window for RejseNu Desktop Client."""
+    """WinUI 3 Main Window for Spor Desktop Client."""
     def __init__(self):
         super().__init__()
         self.init_window()

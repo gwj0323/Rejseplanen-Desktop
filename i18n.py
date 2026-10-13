@@ -3,7 +3,7 @@ from config import config
 
 TRANSLATIONS = {
     "zh_CN": {
-        "app_title": "RejseNu",
+        "app_title": "Spor",
         "nav_trip": "行程规划",
         "nav_board": "实时大屏",
         "nav_station": "站点查询",
@@ -114,7 +114,7 @@ TRANSLATIONS = {
         "theme_light": "浅色",
         "theme_dark": "深色",
         "settings_about_group": "关于",
-        "settings_about_desc": "RejseNu - 丹麦公共出行客户端",
+        "settings_about_desc": "Spor - 丹麦公共出行客户端",
         "settings_about_author": "作者: gwj0323",
         "settings_save_btn": "保存设置",
         "settings_saved_msg": "设置已保存",
@@ -144,7 +144,7 @@ TRANSLATIONS = {
     },
     
     "en_US": {
-        "app_title": "RejseNu",
+        "app_title": "Spor",
         "nav_trip": "Planner",
         "nav_board": "Live Board",
         "nav_station": "Stations",
@@ -255,7 +255,7 @@ TRANSLATIONS = {
         "theme_light": "Light",
         "theme_dark": "Dark",
         "settings_about_group": "About",
-        "settings_about_desc": "RejseNu - Denmark Transit Companion",
+        "settings_about_desc": "Spor - Denmark Transit Companion",
         "settings_about_author": "Author: gwj0323",
         "settings_save_btn": "Save Settings",
         "settings_saved_msg": "Settings saved",
@@ -285,7 +285,7 @@ TRANSLATIONS = {
     },
     
     "da_DK": {
-        "app_title": "RejseNu",
+        "app_title": "Spor",
         "nav_trip": "Rejseplan",
         "nav_board": "Afgange",
         "nav_station": "Stationer",
@@ -396,7 +396,7 @@ TRANSLATIONS = {
         "theme_light": "Lyst",
         "theme_dark": "Mørkt",
         "settings_about_group": "Om",
-        "settings_about_desc": "RejseNu - App til kollektiv trafik i Danmark.",
+        "settings_about_desc": "Spor - App til kollektiv trafik i Danmark.",
         "settings_about_author": "Forfatter: gwj0323",
         "settings_save_btn": "Gem",
         "settings_saved_msg": "Gemt",

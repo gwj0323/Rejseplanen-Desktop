@@ -1,4 +1,4 @@
-# RejseNu 🇩🇰
+# Spor 🇩🇰
 
 基于 Flutter (移动端) 与 PyQt6 (桌面端) 开发的丹麦全域公共交通出行助手，接入丹麦官方 Rejseplanen REST API。
 
@@ -20,8 +20,8 @@
 ### 1. 移动端 (Android & iOS)
 
 移动端工程位于 [`rejseplanen_mobile/`](file:///c:/Users/gewen/Documents/antigravity/jolly-tesla/Rejseplanen-Desktop/rejseplanen_mobile)：
-- **Android APK**：在 GitHub Actions 构建产物中下载 `rejsenu-release-apk`。
-- **iOS IPA**：在 GitHub Actions 构建产物中下载 `rejsenu-release-ipa`，支持使用 Sideloadly / AltStore / TrollStore 自签或侧载安装。
+- **Android APK**：在 GitHub Actions 构建产物中下载 `spor-release-apk`。
+- **iOS IPA**：在 GitHub Actions 构建产物中下载 `spor-release-ipa`，支持使用 Sideloadly / AltStore / TrollStore 自签或侧载安装。
 
 ### 2. 桌面端 (Windows / macOS / Linux)
 

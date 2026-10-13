@@ -15,11 +15,11 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
-  static const String channelId = 'rejsenu_trip_reminders';
+  static const String channelId = 'spor_trip_reminders';
   static const String channelName = '行程提醒 (Trip Reminders)';
   static const String channelDescription = '出发提醒、换乘提醒和下车提醒通知';
 
-  static const String ongoingChannelId = 'rejsenu_ongoing_trip';
+  static const String ongoingChannelId = 'spor_ongoing_trip';
   static const String ongoingChannelName = '实时行程动态 (Live Trip Tracker)';
   static const String ongoingChannelDescription = '在通知栏实时展示正在进行的行程状态与到站提醒';
   static const int ongoingNotificationId = 8888;

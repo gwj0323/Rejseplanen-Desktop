@@ -39,6 +39,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
 
   @override
   void dispose() {
+    FocusManager.instance.primaryFocus?.unfocus();
     _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
     super.dispose();
@@ -143,7 +144,10 @@ class _StationPickerModalState extends State<StationPickerModal> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    Navigator.of(context).pop();
+                  },
                 ),
               ],
             ),
@@ -244,6 +248,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                   ),
                   onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
                     config.addRecentSearch(s.name);
                     Navigator.of(context).pop(s);
                   },
