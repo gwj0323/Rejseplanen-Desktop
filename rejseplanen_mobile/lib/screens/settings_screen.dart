@@ -14,10 +14,21 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _keyCtrl;
   late TextEditingController _urlCtrl;
+  late TextEditingController _hexCtrl;
   bool _obscureKey = true;
   bool _testing = false;
   String? _testResult;
   bool? _testSuccess;
+
+  static const List<Map<String, dynamic>> _presetColors = [
+    {"nameKey": "accent_preset_red", "hex": "#C72027", "color": Color(0xFFC72027)},
+    {"nameKey": "accent_preset_blue", "hex": "#005776", "color": Color(0xFF005776)},
+    {"nameKey": "accent_preset_green", "hex": "#007D55", "color": Color(0xFF007D55)},
+    {"nameKey": "accent_preset_orange", "hex": "#E65100", "color": Color(0xFFE65100)},
+    {"nameKey": "accent_preset_purple", "hex": "#6750A4", "color": Color(0xFF6750A4)},
+    {"nameKey": "accent_preset_teal", "hex": "#006874", "color": Color(0xFF006874)},
+    {"nameKey": "accent_preset_amber", "hex": "#B45309", "color": Color(0xFFB45309)},
+  ];
 
   @override
   void initState() {
@@ -25,12 +36,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final config = Provider.of<AppConfig>(context, listen: false);
     _keyCtrl = TextEditingController(text: config.apiKey);
     _urlCtrl = TextEditingController(text: config.baseUrl);
+    _hexCtrl = TextEditingController(
+      text: config.isSystemAccentColor ? "#C72027" : config.accentColor,
+    );
   }
 
   @override
   void dispose() {
     _keyCtrl.dispose();
     _urlCtrl.dispose();
+    _hexCtrl.dispose();
     super.dispose();
   }
 
@@ -258,6 +273,125 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
+                  const Divider(height: 24),
+
+                  // Accent Color Section
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.color_lens_outlined),
+                    title: Text(I18n.t(context, "settings_accent_label")),
+                    subtitle: Text(
+                      I18n.t(context, "settings_accent_desc"),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ),
+
+                  // Option 1: Follow system
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(I18n.t(context, "accent_follow_system")),
+                    subtitle: Text(
+                      I18n.t(context, "accent_follow_system_desc"),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    value: config.isSystemAccentColor,
+                    onChanged: (val) {
+                      if (val) {
+                        config.setAccentColor('system');
+                      } else {
+                        config.setAccentColor('#C72027');
+                        _hexCtrl.text = "#C72027";
+                      }
+                    },
+                  ),
+
+                  // Preset colors & custom hex when not following system
+                  if (!config.isSystemAccentColor) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: _presetColors.map((preset) {
+                        final String hex = preset["hex"] as String;
+                        final Color color = preset["color"] as Color;
+                        final bool isSelected =
+                            config.accentColor.toLowerCase() == hex.toLowerCase();
+
+                        return GestureDetector(
+                          onTap: () {
+                            config.setAccentColor(hex);
+                            _hexCtrl.text = hex;
+                          },
+                          child: Tooltip(
+                            message: I18n.t(context, preset["nameKey"]),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(color: theme.colorScheme.onSurface, width: 3)
+                                    : Border.all(color: Colors.black12, width: 1),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: color.withOpacity(0.4),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        )
+                                      ]
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Custom hex code input
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _hexCtrl,
+                            decoration: InputDecoration(
+                              hintText: I18n.t(context, "accent_custom_hint"),
+                              labelText: I18n.t(context, "accent_custom_hex"),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonal(
+                          onPressed: () {
+                            String text = _hexCtrl.text.replaceAll('#', '').trim();
+                            if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(text)) {
+                              config.setAccentColor('#$text');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(I18n.t(context, "settings_saved_msg"))),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(I18n.t(context, "accent_custom_error")),
+                                  backgroundColor: Colors.red.shade700,
+                                ),
+                              );
+                            }
+                          },
+                          child: Text(I18n.t(context, "accent_custom_apply")),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

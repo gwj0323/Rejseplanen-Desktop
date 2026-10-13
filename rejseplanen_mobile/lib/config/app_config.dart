@@ -11,6 +11,7 @@ class AppConfig extends ChangeNotifier {
   bool _mockFallback = true;
   String _language = 'zh_CN'; // 'zh_CN', 'en_US', 'da_DK'
   ThemeMode _themeMode = ThemeMode.system;
+  String _accentColor = 'system'; // 'system' (Material You) or hex like '#C72027'
   int _autoRefreshInterval = 30;
 
   List<Station> _favoriteStations = [
@@ -39,6 +40,22 @@ class AppConfig extends ChangeNotifier {
   bool get mockFallback => _mockFallback;
   String get language => _language;
   ThemeMode get themeMode => _themeMode;
+  String get accentColor => _accentColor;
+  bool get isSystemAccentColor => _accentColor == 'system';
+
+  Color get customAccentColor {
+    if (_accentColor == 'system') {
+      return const Color(0xFFC72027);
+    }
+    try {
+      String hex = _accentColor.replaceAll('#', '').trim();
+      if (hex.length == 6) hex = 'FF$hex';
+      return Color(int.parse(hex, radix: 16));
+    } catch (_) {
+      return const Color(0xFFC72027);
+    }
+  }
+
   int get autoRefreshInterval => _autoRefreshInterval;
   List<Station> get favoriteStations => _favoriteStations;
   List<Map<String, Station>> get favoriteTrips => _favoriteTrips;
@@ -61,6 +78,7 @@ class AppConfig extends ChangeNotifier {
         _mockFallback = data['mock_fallback'] ?? true;
         _language = data['language'] ?? 'zh_CN';
         _autoRefreshInterval = data['auto_refresh_interval'] ?? 30;
+        _accentColor = data['accent_color'] ?? 'system';
 
         final themeStr = data['theme'] ?? 'Auto';
         if (themeStr == 'Light') {
@@ -109,6 +127,7 @@ class AppConfig extends ChangeNotifier {
         'mock_fallback': _mockFallback,
         'language': _language,
         'theme': themeStr,
+        'accent_color': _accentColor,
         'auto_refresh_interval': _autoRefreshInterval,
         'favorite_stations': _favoriteStations.map((s) => s.toJson()).toList(),
         'favorite_trips': _favoriteTrips.map((t) => {
@@ -146,6 +165,11 @@ class AppConfig extends ChangeNotifier {
 
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
+    saveSettings();
+  }
+
+  void setAccentColor(String color) {
+    _accentColor = color;
     saveSettings();
   }
 

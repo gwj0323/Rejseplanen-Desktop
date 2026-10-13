@@ -266,7 +266,7 @@ class _StationScreenState extends State<StationScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.my_location, color: Color(0xFFC72027), size: 22),
+                        Icon(Icons.my_location, color: theme.colorScheme.primary, size: 22),
                         const SizedBox(width: 8),
                         Text(
                           I18n.t(context, "station_nearby_title"),
@@ -301,6 +301,7 @@ class _StationScreenState extends State<StationScreen> {
                     // Quick city presets
                     Wrap(
                       spacing: 8,
+                      runSpacing: 4,
                       children: [
                         ActionChip(
                           avatar: const Icon(Icons.location_city, size: 16),
@@ -308,9 +309,24 @@ class _StationScreenState extends State<StationScreen> {
                           onPressed: () => _setPreset(55.6761, 12.5683, I18n.t(context, "station_preset_cph")),
                         ),
                         ActionChip(
+                          avatar: const Icon(Icons.flight_takeoff, size: 16),
+                          label: Text(I18n.t(context, "station_preset_cph_airport")),
+                          onPressed: () => _setPreset(55.6294, 12.6492, I18n.t(context, "station_preset_cph_airport")),
+                        ),
+                        ActionChip(
                           avatar: const Icon(Icons.location_city, size: 16),
                           label: Text(I18n.t(context, "station_preset_aarhus")),
                           onPressed: () => _setPreset(56.1504, 10.2047, I18n.t(context, "station_preset_aarhus")),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.location_city, size: 16),
+                          label: Text(I18n.t(context, "station_preset_odense")),
+                          onPressed: () => _setPreset(55.4018, 10.3867, I18n.t(context, "station_preset_odense")),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.location_city, size: 16),
+                          label: Text(I18n.t(context, "station_preset_aalborg")),
+                          onPressed: () => _setPreset(57.0425, 9.9172, I18n.t(context, "station_preset_aalborg")),
                         ),
                       ],
                     ),
@@ -320,10 +336,83 @@ class _StationScreenState extends State<StationScreen> {
             ),
           ),
 
+          // Outside Denmark notice card
+          if (!LocationService.isInDenmark(_lat, _lon))
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Card(
+                elevation: 0,
+                color: theme.colorScheme.tertiaryContainer.withOpacity(0.4),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.public, color: theme.colorScheme.tertiary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${I18n.t(context, "station_outside_title")} (~${LocationService.distanceToDenmarkKm(_lat, _lon).round()} km)",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: theme.colorScheme.onTertiaryContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              I18n.t(context, "station_outside_desc"),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onTertiaryContainer.withOpacity(0.85),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           if (_loadingNearby)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: LinearProgressIndicator(),
+            ),
+
+          if (!_loadingNearby && _nearbyResults.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.location_off_outlined, size: 48, color: Colors.grey.shade400),
+                    const SizedBox(height: 12),
+                    Text(
+                      I18n.t(context, "station_empty_nearby"),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      I18n.t(context, "station_empty_nearby_desc"),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _loadNearby,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: Text(I18n.t(context, "board_refresh")),
+                    ),
+                  ],
+                ),
+              ),
             ),
 
           for (var station in _nearbyResults) _buildStationTile(context, station, config),
@@ -335,6 +424,17 @@ class _StationScreenState extends State<StationScreen> {
   Widget _buildStationTile(BuildContext context, Station station, AppConfig config) {
     final isFav = config.isFavoriteStation(station.id);
 
+    final List<String> subtitleParts = [];
+    if (station.distance != null && station.distance!.isNotEmpty) {
+      subtitleParts.add(station.distance!);
+    }
+    if (station.desc != null && station.desc!.isNotEmpty) {
+      subtitleParts.add(station.desc!);
+    }
+    if (subtitleParts.isEmpty) {
+      subtitleParts.add("ID: ${station.id}");
+    }
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: const CircleAvatar(
@@ -343,8 +443,7 @@ class _StationScreenState extends State<StationScreen> {
       ),
       title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
-        station.desc ??
-            (station.distance != null ? "${station.distance}" : "ID: ${station.id}"),
+        subtitleParts.join(" • "),
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       ),
       trailing: Row(

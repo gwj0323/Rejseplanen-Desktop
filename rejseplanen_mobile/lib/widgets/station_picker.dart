@@ -86,6 +86,16 @@ class _StationPickerModalState extends State<StationPickerModal> {
           _results = res.data;
           _locatingGps = false;
         });
+        if (!LocationService.isInDenmark(loc.lat!, loc.lon!)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "${I18n.t(context, "station_outside_title")}: ${I18n.t(context, "station_outside_desc")}",
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     } else {
       setState(() => _locatingGps = false);
@@ -178,7 +188,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
                             height: 14,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.my_location, size: 16, color: Color(0xFFC72027)),
+                        : Icon(Icons.my_location, size: 16, color: theme.colorScheme.primary),
                     label: Text(
                       _locatingGps
                           ? I18n.t(context, "station_locating")

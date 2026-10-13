@@ -218,14 +218,53 @@ class RejseplanenApiClient {
     return ApiResult(data: [], isMock: false, error: "未找到相关站点");
   }
 
-  Future<ApiResult<List<Station>>> nearbyStops(double lat, double lon, {int maxNo = 10}) async {
+  Future<ApiResult<List<Station>>> nearbyStops(double lat, double lon, {int maxNo = 15, int radiusMeters = 10000}) async {
+    final bool userInDenmark = LocationService.isInDenmark(lat, lon);
+
+    // If user is clearly outside Denmark (e.g. testing from China or outside Nordic region)
+    if (!userInDenmark) {
+      final mock = List<Station>.from(MockData.stations);
+      mock.sort((a, b) =>
+          ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
+              .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
+      final withDist = mock.take(maxNo).map((s) {
+        return Station(
+          id: s.id,
+          extId: s.extId,
+          name: s.name,
+          lat: s.lat,
+          lon: s.lon,
+          types: s.types,
+          desc: s.desc,
+          distance: "距您 ${LocationService.formatDistance(lat, lon, s.lat, s.lon)}",
+        );
+      }).toList();
+      return ApiResult(
+        data: withDist,
+        isMock: true,
+        error: "OUTSIDE_DENMARK",
+      );
+    }
+
     final key = config.apiKey.trim();
     if (key.isEmpty) {
       final mock = List<Station>.from(MockData.stations);
       mock.sort((a, b) =>
           ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
               .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
-      return ApiResult(data: mock.take(maxNo).toList(), isMock: true);
+      final withDist = mock.take(maxNo).map((s) {
+        return Station(
+          id: s.id,
+          extId: s.extId,
+          name: s.name,
+          lat: s.lat,
+          lon: s.lon,
+          types: s.types,
+          desc: s.desc,
+          distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
+        );
+      }).toList();
+      return ApiResult(data: withDist, isMock: true);
     }
 
     try {
@@ -233,6 +272,7 @@ class RejseplanenApiClient {
         "originCoordLat": lat.toString(),
         "originCoordLong": lon.toString(),
         "maxNo": maxNo.toString(),
+        "r": radiusMeters.toString(),
         "accessId": key,
         "format": "json"
       });
