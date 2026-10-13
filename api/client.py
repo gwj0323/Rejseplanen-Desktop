@@ -196,7 +196,9 @@ class RejseplanenClient:
         """Search stations and addresses. Returns (results, is_mock, error_msg)."""
         key = self._get_api_key()
         if not key:
-            return search_mock_stations(query), True, None
+            if config.mock_fallback:
+                return search_mock_stations(query), True, None
+            return [], False, "未配置 API Key"
             
         endpoint = f"{self._get_base_url()}/location.name"
         params = {
@@ -269,9 +271,11 @@ class RejseplanenClient:
         """Find nearby stops by coordinates. Returns (results, is_mock, error_msg)."""
         key = self._get_api_key()
         if not key:
-            mock_stations = list(search_mock_stations(""))
-            mock_stations.sort(key=lambda s: (s["lat"] - lat)**2 + (s["lon"] - lon)**2)
-            return mock_stations[:max_no], True, None
+            if config.mock_fallback:
+                mock_stations = list(search_mock_stations(""))
+                mock_stations.sort(key=lambda s: (s["lat"] - lat)**2 + (s["lon"] - lon)**2)
+                return mock_stations[:max_no], True, None
+            return [], False, "未配置 API Key"
             
         endpoint = f"{self._get_base_url()}/location.nearbystops"
         params = {
@@ -331,7 +335,9 @@ class RejseplanenClient:
         """Fetch departure board for a station. Returns (departures, is_mock, error_msg)."""
         key = self._get_api_key()
         if not key:
-            return get_mock_departures(station_id), True, None
+            if config.mock_fallback:
+                return get_mock_departures(station_id), True, None
+            return [], False, "未配置 API Key"
             
         # Resolve station ID if given name or non-HAFAS ID
         resolved_id = self._resolve_station_hafas_id(station_id)
@@ -424,7 +430,9 @@ class RejseplanenClient:
         """Fetch arrival board for a station. Returns (arrivals, is_mock, error_msg)."""
         key = self._get_api_key()
         if not key:
-            return get_mock_arrivals(station_id), True, None
+            if config.mock_fallback:
+                return get_mock_arrivals(station_id), True, None
+            return [], False, "未配置 API Key"
             
         # Resolve station ID if given name or non-HAFAS ID
         resolved_id = self._resolve_station_hafas_id(station_id)
@@ -510,7 +518,9 @@ class RejseplanenClient:
         """Find journey proposals. Returns (trips, is_mock, error_msg)."""
         key = self._get_api_key()
         if not key:
-            return get_mock_trips(origin_id, dest_id), True, None
+            if config.mock_fallback:
+                return get_mock_trips(origin_id, dest_id), True, None
+            return [], False, "未配置 API Key"
             
         # Resolve short or EVA IDs to full HAFAS location ID
         orig_resolved = self._resolve_station_hafas_id(origin_id)

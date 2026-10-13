@@ -9,6 +9,7 @@ import 'trip_reminder_sheet.dart';
 import '../services/calendar_service.dart';
 import '../services/notification_service.dart';
 import '../services/api_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class TripCard extends StatefulWidget {
   final TripProposal trip;
@@ -290,15 +291,52 @@ class _TripCardState extends State<TripCard> {
                           lang: config.effectiveLanguage,
                         );
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                ok
-                                    ? I18n.t(context, "trip_calendar_success")
-                                    : I18n.t(context, "trip_calendar_error"),
+                          if (ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(I18n.t(context, "trip_calendar_success")),
                               ),
-                            ),
-                          );
+                            );
+                          } else {
+                            final permDenied = await CalendarService.isPermanentlyDenied();
+                            if (context.mounted) {
+                              if (permDenied) {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: Row(
+                                      children: [
+                                        const Icon(Icons.calendar_today, color: Colors.amber),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: Text(I18n.t(ctx, "trip_calendar_perm_title"))),
+                                      ],
+                                    ),
+                                    content: Text(I18n.t(ctx, "trip_calendar_perm_body")),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: Text(I18n.t(ctx, "common_cancel")),
+                                      ),
+                                      FilledButton.icon(
+                                        icon: const Icon(Icons.settings, size: 16),
+                                        onPressed: () async {
+                                          Navigator.pop(ctx);
+                                          await openAppSettings();
+                                        },
+                                        label: Text(I18n.t(ctx, "trip_calendar_open_settings")),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(I18n.t(context, "trip_calendar_error")),
+                                  ),
+                                );
+                              }
+                            }
+                          }
                         }
                       },
                     ),

@@ -16,6 +16,15 @@ def patch():
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.READ_CALENDAR"/>
+    <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.INSERT" />
+            <data android:mimeType="vnd.android.cursor.dir/event" />
+        </intent>
+    </queries>
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <uses-feature android:name="android.hardware.location.network" android:required="false"/>
 """
@@ -36,9 +45,27 @@ def patch():
         if "ScheduledNotificationReceiver" not in content:
             content = content.replace("<activity", receivers + "        <activity")
         content = re.sub(r'android:label="[^"]*"', 'android:label="Spor"', content)
+        if "android:roundIcon" not in content:
+            content = content.replace(
+                'android:icon="@mipmap/ic_launcher"',
+                'android:icon="@mipmap/ic_launcher"\n        android:roundIcon="@mipmap/ic_launcher_round"'
+            )
         with open(manifest_path, "w", encoding="utf-8") as f:
             f.write(content)
         print("Patched AndroidManifest.xml with notification permissions, receivers and app label Spor")
+
+    # Copy custom launcher icons from assets/android/res
+    import shutil
+    assets_res = "assets/android/res"
+    dest_res = "android/app/src/main/res"
+    if os.path.exists(assets_res) and os.path.exists(dest_res):
+        for root, dirs, files in os.walk(assets_res):
+            rel_dir = os.path.relpath(root, assets_res)
+            target_dir = os.path.join(dest_res, rel_dir)
+            os.makedirs(target_dir, exist_ok=True)
+            for f in files:
+                shutil.copy2(os.path.join(root, f), os.path.join(target_dir, f))
+        print("Copied custom Spor launcher icons to android/app/src/main/res")
 
     # 2. Upgrade Kotlin version to 1.9.22 in build.gradle and settings.gradle
     for fn in ["android/build.gradle", "android/settings.gradle"]:

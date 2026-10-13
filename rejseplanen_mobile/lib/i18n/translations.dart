@@ -103,6 +103,9 @@ class I18n {
       "trip_add_calendar": "加入日历",
       "trip_calendar_success": "已成功添加到系统日历",
       "trip_calendar_error": "添加日历失败，请检查日历权限",
+      "trip_calendar_perm_title": "需要日历权限",
+      "trip_calendar_perm_body": "Spor 需要访问日历以将乘车方案与站台提醒写入您的系统日历中。请在系统设置中允许日历权限。",
+      "trip_calendar_open_settings": "前往设置",
       "station_recent_searches": "最近搜索",
       "station_clear_recent": "清空",
 
@@ -343,6 +346,9 @@ class I18n {
       "trip_add_calendar": "Add to Calendar",
       "trip_calendar_success": "Added to calendar",
       "trip_calendar_error": "Failed to add to calendar, please check permissions",
+      "trip_calendar_perm_title": "Calendar Permission Required",
+      "trip_calendar_perm_body": "Spor needs calendar access to export trip details and platform notes to your system calendar. Please enable it in system settings.",
+      "trip_calendar_open_settings": "Open Settings",
       "station_recent_searches": "Recent Searches",
       "station_clear_recent": "Clear",
 
@@ -583,6 +589,9 @@ class I18n {
       "trip_add_calendar": "Tilføj til kalender",
       "trip_calendar_success": "Tilføjet til kalender",
       "trip_calendar_error": "Kunne ikke tilføje til kalender, tjek tilladelser",
+      "trip_calendar_perm_title": "Kalendertilladelse påkrævet",
+      "trip_calendar_perm_body": "Spor skal have adgang til kalenderen for at tilføje rejser og sporpåmindelser. Giv venligst tilladelse i systemindstillinger.",
+      "trip_calendar_open_settings": "Åbn indstillinger",
       "station_recent_searches": "Seneste søgninger",
       "station_clear_recent": "Ryd",
 

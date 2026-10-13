@@ -18,6 +18,8 @@ def patch():
 \t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
 \t<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 \t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
+\t<key>NSCalendarsFullAccessUsageDescription</key>
+\t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
 """
         if "NSLocationWhenInUseUsageDescription" not in content:
             # Insert right before </dict></plist>
@@ -59,6 +61,19 @@ def patch():
         with open(podfile_path, "w", encoding="utf-8") as f:
             f.write(pod_content)
         print("Patched ios/Podfile with iOS 13.0 deployment target")
+
+    # 3. Copy custom Spor iOS AppIcon to ios/Runner/Assets.xcassets/AppIcon.appiconset
+    import shutil
+    src_appicon = "assets/ios/AppIcon.appiconset"
+    dst_appicon = "ios/Runner/Assets.xcassets/AppIcon.appiconset"
+    if os.path.exists(src_appicon):
+        os.makedirs(dst_appicon, exist_ok=True)
+        for f in os.listdir(src_appicon):
+            src_file = os.path.join(src_appicon, f)
+            dst_file = os.path.join(dst_appicon, f)
+            if os.path.isfile(src_file):
+                shutil.copy2(src_file, dst_file)
+        print("Copied custom Spor iOS app icons to ios/Runner/Assets.xcassets/AppIcon.appiconset")
 
 if __name__ == "__main__":
     patch()
