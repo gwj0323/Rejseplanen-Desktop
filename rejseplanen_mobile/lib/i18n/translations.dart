@@ -148,7 +148,6 @@ class I18n {
       "settings_about_group": "关于",
       "settings_about_desc": "Rejseplanen 丹麦公共出行客户端 (Flutter Android 版)",
       "settings_about_author": "作者: gwj0323",
-      "settings_save_btn": "保存设置",
       "settings_saved_msg": "设置已保存",
 
       // Common
@@ -309,7 +308,6 @@ class I18n {
       "settings_about_group": "About",
       "settings_about_desc": "Rejseplanen Denmark Transit Companion (Flutter Android)",
       "settings_about_author": "Author: gwj0323",
-      "settings_save_btn": "Save Settings",
       "settings_saved_msg": "Settings saved",
 
       // Common
@@ -470,7 +468,6 @@ class I18n {
       "settings_about_group": "Om",
       "settings_about_desc": "Rejseplanen app til kollektiv trafik i Danmark (Flutter Android).",
       "settings_about_author": "Forfatter: gwj0323",
-      "settings_save_btn": "Gem",
       "settings_saved_msg": "Gemt",
 
       // Common
