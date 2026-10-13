@@ -7,6 +7,7 @@ import '../models/station.dart';
 import '../models/departure.dart';
 import '../models/trip.dart';
 import 'mock_data.dart';
+import 'location_service.dart';
 
 class ApiResult<T> {
   final T data;
@@ -243,13 +244,22 @@ class RejseplanenApiClient {
         for (var item in rawItems) {
           final stop = item["StopLocation"] ?? item["CoordLocation"];
           if (stop != null) {
+            String? distStr = stop["dist"]?.toString();
+            if (distStr != null && RegExp(r'^\d+$').hasMatch(distStr)) {
+              distStr = "$distStr m";
+            }
+            double sLat = (stop["lat"] ?? stop["y"] ?? 0.0).toDouble();
+            double sLon = (stop["lon"] ?? stop["x"] ?? 0.0).toDouble();
+            if (distStr == null && sLat != 0.0) {
+              distStr = LocationService.formatDistance(lat, lon, sLat, sLon);
+            }
             results.add(Station(
               id: (stop["id"] ?? stop["extId"] ?? "").toString(),
               extId: (stop["extId"] ?? "").toString(),
               name: stop["name"]?.toString() ?? "",
-              lat: (stop["lat"] ?? stop["y"] ?? 0.0).toDouble(),
-              lon: (stop["lon"] ?? stop["x"] ?? 0.0).toDouble(),
-              distance: stop["dist"]?.toString(),
+              lat: sLat,
+              lon: sLon,
+              distance: distStr,
             ));
           }
         }
@@ -266,9 +276,22 @@ class RejseplanenApiClient {
       mock.sort((a, b) =>
           ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
               .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
-      return ApiResult(data: mock.take(maxNo).toList(), isMock: true);
+      final withDist = mock.take(maxNo).map((s) {
+        return Station(
+          id: s.id,
+          extId: s.extId,
+          name: s.name,
+          lat: s.lat,
+          lon: s.lon,
+          types: s.types,
+          desc: s.desc,
+          distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
+        );
+      }).toList();
+      return ApiResult(data: withDist, isMock: true);
     }
     return ApiResult(data: [], isMock: false, error: "未找到周边站点");
+
   }
 
   Future<ApiResult<List<Departure>>> getDepartureBoard(
