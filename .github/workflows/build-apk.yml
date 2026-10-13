@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java Development Kit (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        working-directory: rejseplanen_mobile
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        working-directory: rejseplanen_mobile
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rejseplanen-release-apk
+          path: rejseplanen_mobile/build/app/outputs/flutter-apk/app-release.apk

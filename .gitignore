@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!rejseplanen_mobile/lib/
 parts/
 sdist/
 var/
@@ -44,3 +45,13 @@ venv.bak/
 # Local user configurations & secrets
 settings.json
 *.log
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+rejseplanen_mobile/build/
+rejseplanen_mobile/.dart_tool/
+

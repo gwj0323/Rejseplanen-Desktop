@@ -1,0 +1,190 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../config/app_config.dart';
+import '../models/station.dart';
+import '../services/api_client.dart';
+import '../i18n/translations.dart';
+
+class StationPickerModal extends StatefulWidget {
+  final String title;
+
+  const StationPickerModal({super.key, required this.title});
+
+  static Future<Station?> show(BuildContext context, {required String title}) {
+    return showModalBottomSheet<Station>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StationPickerModal(title: title),
+    );
+  }
+
+  @override
+  State<StationPickerModal> createState() => _StationPickerModalState();
+}
+
+class _StationPickerModalState extends State<StationPickerModal> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  List<Station> _results = [];
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(_onSearchChanged);
+    _loadInitialSuggestions();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.removeListener(_onSearchChanged);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _loadInitialSuggestions() {
+    final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
+    client.searchLocations("").then((res) {
+      if (mounted) {
+        setState(() {
+          _results = res.data;
+        });
+      }
+    });
+  }
+
+  void _onSearchChanged() {
+    final q = _searchCtrl.text.trim();
+    if (q.isEmpty) {
+      _loadInitialSuggestions();
+      return;
+    }
+    setState(() => _loading = true);
+    final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
+    client.searchLocations(q).then((res) {
+      if (mounted) {
+        setState(() {
+          _results = res.data;
+          _loading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = Provider.of<AppConfig>(context);
+    final theme = Theme.of(context);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  widget.title,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: I18n.t(context, "station_search_placeholder"),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _searchCtrl.clear(),
+                      )
+                    : null,
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+            ),
+          ),
+          // Favorites Quick Row
+          if (config.favoriteStations.isNotEmpty && _searchCtrl.text.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: SizedBox(
+                height: 38,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: config.favoriteStations.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (ctx, i) {
+                    final s = config.favoriteStations[i];
+                    return ActionChip(
+                      avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
+                      label: Text(s.name, style: const TextStyle(fontSize: 12)),
+                      onPressed: () => Navigator.of(context).pop(s),
+                    );
+                  },
+                ),
+              ),
+            ),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: LinearProgressIndicator(),
+            ),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _results.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+              itemBuilder: (ctx, i) {
+                final s = _results[i];
+                return ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFE2E8F0),
+                    child: Icon(Icons.train, color: Color(0xFF0F172A), size: 20),
+                  ),
+                  title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                    s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                  onTap: () {
+                    config.addRecentSearch(s.name);
+                    Navigator.of(context).pop(s);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

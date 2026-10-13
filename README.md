@@ -30,10 +30,18 @@ python app.py
 
 ## 技术栈
 
-- GUI: Python 3 + PyQt6 + [PyQt6-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
-- 网络: requests
-- 数据接口: Rejseplanen REST API
+- 桌面端 GUI: Python 3 + PyQt6 + [PyQt6-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
+- 移动端 (Android / iOS): Flutter 3 (Material 3) + Dart (位于 [`rejseplanen_mobile/`](file:///c:/Users/gewen/Documents/antigravity/rejseplaned/rejseplanen_mobile))
+- 网络: requests (Python) / http (Dart)
+- 数据接口: Rejseplanen REST API 2.0
+
+## 移动端 App (Android)
+
+项目已完整提供 Android / iOS 原生跨平台移动客户端，位于目录 [`rejseplanen_mobile/`](file:///c:/Users/gewen/Documents/antigravity/rejseplaned/rejseplanen_mobile)：
+- 包含完整的行程规划、实时大屏、站点 GPS 探测、收藏夹、多语言及暗黑模式。
+- 配备 GitHub Actions 自动化打包脚本（`.github/workflows/build-apk.yml`），推送到 GitHub 即可自动一键编译生成 APK 安装包。
 
 ## 作者
 
 - **gwj0323**
+
