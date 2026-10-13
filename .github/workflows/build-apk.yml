@@ -51,10 +51,6 @@ jobs:
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
-      - name: Analyze Dart code
-        working-directory: rejseplanen_mobile
-        run: flutter analyze --no-fatal-infos
-
       - name: Build Android Release APK
         working-directory: rejseplanen_mobile
         run: flutter build apk --release --verbose

@@ -235,8 +235,6 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
   }
 
   Widget _buildBoardTile(BuildContext context, Departure item) {
-    final theme = Theme.of(context);
-
     Color statusColor = Colors.green;
     String statusText = I18n.t(context, "status_ontime");
 
