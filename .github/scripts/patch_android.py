@@ -14,14 +14,30 @@ def patch():
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <uses-feature android:name="android.hardware.location.network" android:required="false"/>
 """
-        if "android.permission.POST_NOTIFICATIONS" not in content:
+        receivers = """
+        <!-- Required for scheduled notifications in flutter_local_notifications -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+"""
+        if "android.permission.USE_EXACT_ALARM" not in content:
             content = content.replace("<application", perms + "    <application")
-            with open(manifest_path, "w", encoding="utf-8") as f:
-                f.write(content)
-        print("Patched AndroidManifest.xml with notification and location permissions")
+        if "ScheduledNotificationReceiver" not in content:
+            content = content.replace("<activity", receivers + "        <activity")
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("Patched AndroidManifest.xml with notification permissions and receivers")
 
     # 2. Upgrade Kotlin version to 1.9.22 in build.gradle and settings.gradle
     for fn in ["android/build.gradle", "android/settings.gradle"]:
