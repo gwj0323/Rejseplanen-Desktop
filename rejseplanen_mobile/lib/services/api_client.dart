@@ -401,6 +401,14 @@ class RejseplanenApiClient {
           }
           if (track.isEmpty) track = "-";
 
+          String? jRef;
+          final jObj = d["JourneyDetailRef"] ?? d["journeyDetailRef"];
+          if (jObj is Map) {
+            jRef = jObj["ref"]?.toString();
+          } else if (jObj is String) {
+            jRef = jObj;
+          }
+
           departures.add(Departure(
             name: d["name"]?.toString() ?? prod["name"]?.toString() ?? "Transit",
             type: cat,
@@ -414,6 +422,7 @@ class RejseplanenApiClient {
             delay: delayMin,
             status: status,
             messages: d["messages"]?.toString() ?? "",
+            journeyDetailRef: jRef,
           ));
         }
 
@@ -483,6 +492,14 @@ class RejseplanenApiClient {
           }
           if (track.isEmpty) track = "-";
 
+          String? jRef;
+          final jObj = a["JourneyDetailRef"] ?? a["journeyDetailRef"];
+          if (jObj is Map) {
+            jRef = jObj["ref"]?.toString();
+          } else if (jObj is String) {
+            jRef = jObj;
+          }
+
           arrivals.add(Departure(
             name: a["name"]?.toString() ?? prod["name"]?.toString() ?? "Transit",
             type: cat,
@@ -496,6 +513,7 @@ class RejseplanenApiClient {
             delay: delayMin,
             status: delayMin >= 5 ? "delayed" : (delayMin > 0 ? "minor_delay" : "normal"),
             messages: a["messages"]?.toString() ?? "",
+            journeyDetailRef: jRef,
           ));
         }
 
@@ -591,6 +609,29 @@ class RejseplanenApiClient {
             firstOrigin ??= orig;
             lastDest = dest;
 
+            String? jRef;
+            final jObj = leg["JourneyDetailRef"] ?? leg["journeyDetailRef"];
+            if (jObj is Map) {
+              jRef = jObj["ref"]?.toString();
+            } else if (jObj is String) {
+              jRef = jObj;
+            }
+
+            final stopsRaw = _ensureList(leg["Stops"]?["Stop"] ?? leg["stops"] ?? leg["Stop"]);
+            List<TripStop>? preloadedStops;
+            if (stopsRaw.isNotEmpty) {
+              preloadedStops = [];
+              for (var s in stopsRaw) {
+                preloadedStops.add(TripStop(
+                  name: s["name"]?.toString() ?? "",
+                  time: _formatTimeStr(s["depTime"]?.toString() ?? s["time"]?.toString() ?? s["arrTime"]?.toString() ?? ""),
+                  date: s["depDate"]?.toString() ?? s["date"]?.toString() ?? s["arrDate"]?.toString() ?? "",
+                  track: s["rtTrack"]?.toString() ?? s["track"]?.toString() ?? "-",
+                  rtTime: _formatTimeStr(s["rtDepTime"]?.toString() ?? s["rtTime"]?.toString() ?? s["rtArrTime"]?.toString() ?? ""),
+                ));
+              }
+            }
+
             parsedLegs.add(TripLeg(
               type: legType.toUpperCase() == "WALK" ? "WALK" : cat,
               name: leg["name"]?.toString() ?? "Leg",
@@ -610,6 +651,8 @@ class RejseplanenApiClient {
                 rtTime: _formatTimeStr(dest["rtTime"]?.toString() ?? dest["time"]?.toString() ?? ""),
               ),
               notes: (leg["Notes"] is Map) ? (leg["Notes"]["text"]?.toString() ?? "") : "",
+              journeyDetailRef: jRef,
+              stops: preloadedStops,
             ));
           }
 
@@ -644,5 +687,84 @@ class RejseplanenApiClient {
       return ApiResult(data: MockData.getTrips(originId, destId), isMock: true);
     }
     return ApiResult(data: [], isMock: false, error: "未找到推荐路线");
+  }
+
+  /// Query intermediate stops and timetable for a specific vehicle journey (journeyDetail)
+  Future<ApiResult<List<TripStop>>> getJourneyDetail(
+    String refUrlOrParam, {
+    String? legName,
+    String? originName,
+    String? destName,
+    String? timeStr,
+    String? dateStr,
+  }) async {
+    final key = config.apiKey.trim();
+    if (key.isNotEmpty && refUrlOrParam.isNotEmpty && !refUrlOrParam.startsWith("mock")) {
+      try {
+        Uri uri;
+        if (refUrlOrParam.startsWith("http://") || refUrlOrParam.startsWith("https://")) {
+          final baseUri = Uri.parse(refUrlOrParam);
+          final q = Map<String, String>.from(baseUri.queryParameters);
+          q["accessId"] = key;
+          q["format"] = "json";
+          uri = baseUri.replace(queryParameters: q);
+        } else {
+          String cleanRef = refUrlOrParam;
+          if (cleanRef.startsWith("journeyDetail?ref=")) {
+            cleanRef = cleanRef.substring("journeyDetail?ref=".length);
+          } else if (cleanRef.startsWith("journeyDetail?")) {
+            final parsed = Uri.parse("https://dummy.com/$cleanRef");
+            cleanRef = parsed.queryParameters["ref"] ?? cleanRef;
+          }
+          uri = Uri.parse("${config.baseUrl}/journeyDetail").replace(queryParameters: {
+            "ref": cleanRef,
+            "accessId": key,
+            "format": "json",
+          });
+        }
+
+        final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(resp.body);
+          var rawStops = data["JourneyDetail"]?["Stop"] ??
+              data["journeyDetail"]?["stop"] ??
+              data["Stop"] ??
+              data["stop"];
+          final list = _ensureList(rawStops);
+          List<TripStop> stops = [];
+          for (var s in list) {
+            String depT = _formatTimeStr(s["depTime"]?.toString() ?? s["time"]?.toString() ?? "");
+            String arrT = _formatTimeStr(s["arrTime"]?.toString() ?? "");
+            String bestTime = depT.isNotEmpty ? depT : arrT;
+
+            String rtDepT = _formatTimeStr(s["rtDepTime"]?.toString() ?? s["rtTime"]?.toString() ?? "");
+            String rtArrT = _formatTimeStr(s["rtArrTime"]?.toString() ?? "");
+            String bestRtTime = rtDepT.isNotEmpty ? rtDepT : (rtArrT.isNotEmpty ? rtArrT : bestTime);
+
+            stops.add(TripStop(
+              name: s["name"]?.toString() ?? "",
+              time: bestTime,
+              date: s["depDate"]?.toString() ?? s["arrDate"]?.toString() ?? s["date"]?.toString() ?? "",
+              track: s["rtTrack"]?.toString() ?? s["track"]?.toString() ?? "-",
+              rtTime: bestRtTime,
+            ));
+          }
+          if (stops.isNotEmpty) {
+            return ApiResult(data: stops, isMock: false);
+          }
+        }
+      } catch (e) {
+        debugPrint('[ApiClient] getJourneyDetail error: $e');
+      }
+    }
+
+    final mockStops = MockData.getJourneyStops(
+      legName: legName,
+      originName: originName,
+      destName: destName,
+      timeStr: timeStr,
+      dateStr: dateStr,
+    );
+    return ApiResult(data: mockStops, isMock: true);
   }
 }

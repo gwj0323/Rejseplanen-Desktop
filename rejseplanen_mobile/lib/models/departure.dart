@@ -11,6 +11,7 @@ class Departure {
   final int delay;
   final String status; // 'normal', 'delayed', 'minor_delay', 'cancelled'
   final String messages;
+  final String? journeyDetailRef;
 
   Departure({
     required this.name,
@@ -25,9 +26,21 @@ class Departure {
     required this.delay,
     required this.status,
     required this.messages,
+    this.journeyDetailRef,
   });
 
   factory Departure.fromJson(Map<String, dynamic> json) {
+    String? jRef;
+    if (json['journeyDetailRef'] != null) {
+      jRef = json['journeyDetailRef']?.toString();
+    } else if (json['JourneyDetailRef'] != null) {
+      if (json['JourneyDetailRef'] is Map) {
+        jRef = json['JourneyDetailRef']['ref']?.toString();
+      } else {
+        jRef = json['JourneyDetailRef']?.toString();
+      }
+    }
+
     return Departure(
       name: json['name']?.toString() ?? 'Transit',
       type: json['type']?.toString() ?? 'TOG',
@@ -41,6 +54,7 @@ class Departure {
       delay: (json['delay'] is num) ? (json['delay'] as num).toInt() : 0,
       status: json['status']?.toString() ?? 'normal',
       messages: json['messages']?.toString() ?? '',
+      journeyDetailRef: jRef,
     );
   }
 

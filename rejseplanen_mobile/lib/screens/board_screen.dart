@@ -8,6 +8,7 @@ import '../services/api_client.dart';
 import '../i18n/translations.dart';
 import '../widgets/station_picker.dart';
 import '../widgets/transit_badge.dart';
+import '../widgets/journey_detail_sheet.dart';
 
 class BoardScreen extends StatefulWidget {
   final Station? initialStation;
@@ -251,6 +252,14 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () {
+        JourneyDetailSheet.show(
+          context,
+          departure: item,
+          currentStation: _currentStation.name,
+        );
+      },
+      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
       leading: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 40, maxWidth: 84),
         child: Align(
