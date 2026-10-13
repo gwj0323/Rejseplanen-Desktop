@@ -47,11 +47,11 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r -q rejseplanen-ios-release.ipa Payload
-          ls -lh rejseplanen-ios-release.ipa
+          zip -r -q rejsenu-ios-release.ipa Payload
+          ls -lh rejsenu-ios-release.ipa
 
       - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rejseplanen-release-ipa
-          path: rejseplanen_mobile/rejseplanen-ios-release.ipa
+          name: rejsenu-release-ipa
+          path: rejseplanen_mobile/rejsenu-ios-release.ipa

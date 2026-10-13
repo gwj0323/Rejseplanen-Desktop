@@ -15,8 +15,8 @@ def main():
     )
     
     app = QApplication(sys.argv)
-    app.setApplicationName("Rejseplanen Desktop")
-    app.setOrganizationName("Rejseplanen")
+    app.setApplicationName("RejseNu")
+    app.setOrganizationName("RejseNu")
     
     from PyQt6.QtGui import QIcon
     from config import RESOURCE_DIR

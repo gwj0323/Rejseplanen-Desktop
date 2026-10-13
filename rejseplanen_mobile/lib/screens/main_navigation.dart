@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../i18n/translations.dart';
 import 'trip_screen.dart';
 import 'board_screen.dart';
-import 'station_screen.dart';
 import 'favorites_screen.dart';
 import 'settings_screen.dart';
 
@@ -19,7 +18,6 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = const [
     TripScreen(),
     BoardScreen(),
-    StationScreen(),
     FavoritesScreen(),
     SettingsScreen(),
   ];
@@ -46,11 +44,6 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: const Icon(Icons.dashboard_outlined),
             selectedIcon: const Icon(Icons.dashboard),
             label: I18n.t(context, "nav_board"),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.location_on_outlined),
-            selectedIcon: const Icon(Icons.location_on),
-            label: I18n.t(context, "nav_station"),
           ),
           NavigationDestination(
             icon: const Icon(Icons.star_outline),

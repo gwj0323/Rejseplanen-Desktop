@@ -484,7 +484,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Rejseplanen Mobile",
+                    "RejseNu",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
@@ -499,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    "Version 1.0.0 (Android Native / Flutter)",
+                    "Version 1.0.0 (Flutter Mobile)",
                     style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
