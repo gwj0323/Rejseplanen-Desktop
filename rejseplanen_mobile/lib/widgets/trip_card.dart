@@ -6,6 +6,8 @@ import '../config/app_config.dart';
 import '../i18n/translations.dart';
 import 'transit_badge.dart';
 import 'trip_reminder_sheet.dart';
+import '../services/calendar_service.dart';
+import '../services/notification_service.dart';
 
 class TripCard extends StatefulWidget {
   final TripProposal trip;
@@ -111,6 +113,28 @@ class _TripCardState extends State<TripCard> {
                       ),
                     ),
                   ],
+                  if (config.isOngoingTripActive(trip.idx)) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue.shade300),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.radar, size: 11, color: Colors.blue.shade700),
+                          const SizedBox(width: 3),
+                          Text(
+                            I18n.t(context, "trip_ongoing_active"),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
@@ -157,10 +181,60 @@ class _TripCardState extends State<TripCard> {
                 ),
                 const SizedBox(height: 10),
                 for (var leg in trip.legs) _buildLegDetail(context, leg),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
+                    // 1. Live Ongoing Trip Tracker
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: config.isOngoingTripActive(trip.idx)
+                            ? Colors.blue.withOpacity(0.18)
+                            : theme.colorScheme.secondaryContainer.withOpacity(0.55),
+                        foregroundColor: config.isOngoingTripActive(trip.idx)
+                            ? Colors.blue.shade900
+                            : theme.colorScheme.secondary,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      icon: Icon(
+                        config.isOngoingTripActive(trip.idx) ? Icons.radar : Icons.radar_outlined,
+                        size: 17,
+                      ),
+                      label: Text(
+                        config.isOngoingTripActive(trip.idx)
+                            ? I18n.t(context, "trip_ongoing_stop")
+                            : I18n.t(context, "trip_ongoing_start"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      onPressed: () async {
+                        if (config.isOngoingTripActive(trip.idx)) {
+                          await NotificationService().stopOngoingTripNotification();
+                          config.stopOngoingTrip();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(I18n.t(context, "trip_ongoing_stopped_snack"))),
+                            );
+                          }
+                        } else {
+                          config.startOngoingTrip(widget.trip, widget.origin, widget.destination);
+                          await NotificationService().showOngoingTripNotification(
+                            trip: widget.trip,
+                            origin: widget.origin,
+                            destination: widget.destination,
+                            lang: config.effectiveLanguage,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(I18n.t(context, "trip_ongoing_started_snack"))),
+                            );
+                          }
+                        }
+                      },
+                    ),
+
+                    // 2. Scheduled Trip Reminders
                     FilledButton.tonalIcon(
                       style: FilledButton.styleFrom(
                         backgroundColor: config.isTripReminderActive(trip.idx)
@@ -169,19 +243,19 @@ class _TripCardState extends State<TripCard> {
                         foregroundColor: config.isTripReminderActive(trip.idx)
                             ? Colors.green.shade800
                             : theme.colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       ),
                       icon: Icon(
                         config.isTripReminderActive(trip.idx)
                             ? Icons.notifications_active
                             : Icons.notifications_outlined,
-                        size: 18,
+                        size: 17,
                       ),
                       label: Text(
                         config.isTripReminderActive(trip.idx)
                             ? I18n.t(context, "trip_reminder_active")
                             : I18n.t(context, "trip_reminder_btn"),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       onPressed: () {
                         TripReminderSheet.show(
@@ -192,9 +266,45 @@ class _TripCardState extends State<TripCard> {
                         );
                       },
                     ),
+
+                    // 3. Add to Calendar
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      icon: const Icon(Icons.calendar_month_outlined, size: 17),
+                      label: Text(
+                        I18n.t(context, "trip_add_calendar"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      onPressed: () async {
+                        final ok = await CalendarService.addTripToCalendar(
+                          trip: widget.trip,
+                          origin: widget.origin,
+                          destination: widget.destination,
+                          lang: config.effectiveLanguage,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                ok
+                                    ? I18n.t(context, "trip_calendar_success")
+                                    : I18n.t(context, "trip_calendar_error"),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+
+                    // 4. Save to Favorites
                     TextButton.icon(
-                      icon: const Icon(Icons.star_border, size: 18),
-                      label: Text(I18n.t(context, "trip_save_fav")),
+                      icon: const Icon(Icons.star_border, size: 17),
+                      label: Text(
+                        I18n.t(context, "trip_save_fav"),
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       onPressed: () {
                         config.addFavoriteTrip(widget.origin, widget.destination);
                         ScaffoldMessenger.of(context).showSnackBar(

@@ -89,6 +89,22 @@ class I18n {
       "notif_arr_body": "列车预计将在 {time} 到达终点站 {station}，请提前收拾随身行李物品，注意下车安全！",
       "notif_track_suffix": "（{track} 站台）",
       "notif_transit_fallback": "车次",
+      "notif_ongoing_title": "{line} ➔ {station}",
+      "notif_ongoing_body": "预计 {time} 到达 {nextStop} | 终点: {dest} ({arrTime})",
+
+      // Trip Ongoing Tracker & Calendar Export
+      "trip_ongoing_start": "开启动态卡片",
+      "trip_ongoing_active": "动态进行中",
+      "trip_ongoing_stop": "结束动态",
+      "trip_ongoing_started_snack": "已在通知栏开启实时行程动态常驻卡片",
+      "trip_ongoing_stopped_snack": "已关闭实时行程动态卡片",
+      "trip_ongoing_banner_title": "当前行程动态追踪中",
+      "trip_ongoing_banner_desc": "通知栏常驻卡片已启用，实时同步下一站与到站时间",
+      "trip_add_calendar": "加入日历",
+      "trip_calendar_success": "已成功添加到系统日历",
+      "trip_calendar_error": "添加日历失败，请检查日历权限",
+      "station_recent_searches": "最近搜索",
+      "station_clear_recent": "清空",
 
       // Extra Screen Keys
       "station_go_settings": "去设置",
@@ -303,6 +319,22 @@ class I18n {
       "notif_arr_body": "Estimated arrival at {station} at {time}. Please remember your belongings and prepare to exit!",
       "notif_track_suffix": " (Track {track})",
       "notif_transit_fallback": "Transit",
+      "notif_ongoing_title": "{line} ➔ {station}",
+      "notif_ongoing_body": "Arr. {time} at {nextStop} | Dest: {dest} ({arrTime})",
+
+      // Trip Ongoing Tracker & Calendar Export
+      "trip_ongoing_start": "Live Tracker",
+      "trip_ongoing_active": "Live Active",
+      "trip_ongoing_stop": "End Tracker",
+      "trip_ongoing_started_snack": "Live trip tracker active in notification bar",
+      "trip_ongoing_stopped_snack": "Live trip tracker stopped",
+      "trip_ongoing_banner_title": "Live Trip Tracker Active",
+      "trip_ongoing_banner_desc": "Persistent notification card active, tracking next stop and arrival",
+      "trip_add_calendar": "Add to Calendar",
+      "trip_calendar_success": "Added to calendar",
+      "trip_calendar_error": "Failed to add to calendar, please check permissions",
+      "station_recent_searches": "Recent Searches",
+      "station_clear_recent": "Clear",
 
       // Extra Screen Keys
       "station_go_settings": "Settings",
@@ -517,6 +549,22 @@ class I18n {
       "notif_arr_body": "Forventet ankomst til {station} kl. {time}. Husk al din bagage og gør klar til at stige af!",
       "notif_track_suffix": " (Spor {track})",
       "notif_transit_fallback": "Tog/Bus",
+      "notif_ongoing_title": "{line} ➔ {station}",
+      "notif_ongoing_body": "Forventet ank. {time} ved {nextStop} | Endestation: {dest} ({arrTime})",
+
+      // Trip Ongoing Tracker & Calendar Export
+      "trip_ongoing_start": "Live sporing",
+      "trip_ongoing_active": "Live aktiv",
+      "trip_ongoing_stop": "Afslut sporing",
+      "trip_ongoing_started_snack": "Live rejsekort er nu aktivt i statuslinjen",
+      "trip_ongoing_stopped_snack": "Live sporing afsluttet",
+      "trip_ongoing_banner_title": "Aktiv rejse spores live",
+      "trip_ongoing_banner_desc": "Statuslinjekort er aktivt med næste stop og ankomsttid",
+      "trip_add_calendar": "Tilføj til kalender",
+      "trip_calendar_success": "Tilføjet til kalender",
+      "trip_calendar_error": "Kunne ikke tilføje til kalender, tjek tilladelser",
+      "station_recent_searches": "Seneste søgninger",
+      "station_clear_recent": "Ryd",
 
       // Extra Screen Keys
       "station_go_settings": "Indstillinger",

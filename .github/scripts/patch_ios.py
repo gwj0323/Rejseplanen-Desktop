@@ -14,6 +14,10 @@ def patch():
 \t<string>Rejseplanen bruger din placering til at finde stoppesteder og stationer i nærheden.</string>
 \t<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 \t<string>Rejseplanen bruger din placering til at finde stoppesteder og levere rejseopdateringer.</string>
+\t<key>NSCalendarsUsageDescription</key>
+\t<string>Rejseplanen bruger din kalender til at tilføje rejser og påmindelser.</string>
+\t<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+\t<string>Rejseplanen bruger din kalender til at tilføje rejser og påmindelser.</string>
 """
         if "NSLocationWhenInUseUsageDescription" not in content:
             # Insert right before </dict></plist>
@@ -22,7 +26,7 @@ def patch():
                 content = content.replace("</dict></plist>", ios_entries + "</dict></plist>")
             with open(info_plist_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            print("Patched ios/Runner/Info.plist with location permissions and display name")
+            print("Patched ios/Runner/Info.plist with location, calendar permissions and display name")
 
     # 2. Patch Podfile to enforce iOS deployment target >= 13.0
     podfile_path = "ios/Podfile"

@@ -47,8 +47,11 @@ class _StationScreenState extends State<StationScreen> {
       setState(() => _searchResults = []);
       return;
     }
+    final config = Provider.of<AppConfig>(context, listen: false);
+    config.addRecentSearch(query);
+
     setState(() => _searching = true);
-    final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
+    final client = RejseplanenApiClient(config);
     client.searchLocations(query).then((res) {
       if (mounted) {
         setState(() {
@@ -174,6 +177,55 @@ class _StationScreenState extends State<StationScreen> {
               ),
             ),
           ),
+
+          // Recent search history chips
+          if (_searchCtrl.text.isEmpty && config.recentSearches.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 6),
+                  Text(
+                    I18n.t(context, "station_recent_searches"),
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => config.clearRecentSearches(),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(I18n.t(context, "station_clear_recent")),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (var query in config.recentSearches)
+                    ActionChip(
+                      avatar: const Icon(Icons.history, size: 14, color: Colors.grey),
+                      label: Text(query, style: const TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        _searchCtrl.text = query;
+                        _onSearch(query);
+                      },
+                    ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Divider(height: 1),
+            ),
+          ],
 
           if (_searching)
             const Padding(
@@ -446,6 +498,12 @@ class _StationScreenState extends State<StationScreen> {
         subtitleParts.join(" • "),
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       ),
+      onTap: () {
+        config.addRecentSearch(station.name);
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => BoardScreen(initialStation: station)),
+        );
+      },
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -466,6 +524,7 @@ class _StationScreenState extends State<StationScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (val) {
+              config.addRecentSearch(station.name);
               if (val == 'board') {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => BoardScreen(initialStation: station)),

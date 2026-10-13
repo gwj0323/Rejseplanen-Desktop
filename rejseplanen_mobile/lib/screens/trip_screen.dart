@@ -8,6 +8,7 @@ import '../services/api_client.dart';
 import '../i18n/translations.dart';
 import '../widgets/station_picker.dart';
 import '../widgets/trip_card.dart';
+import '../services/notification_service.dart';
 
 class TripScreen extends StatefulWidget {
   final Station? initialOrigin;
@@ -125,6 +126,7 @@ class _TripScreenState extends State<TripScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final config = Provider.of<AppConfig>(context);
     final dateStr = DateFormat('dd.MM.yyyy').format(_selectedDate);
     final timeStr =
         "${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}";
@@ -167,6 +169,83 @@ class _TripScreenState extends State<TripScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
+            // Active Ongoing Trip Banner
+            if (config.hasActiveOngoingTrip && config.activeOngoingTrip != null) ...[
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.radar, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                I18n.t(context, "trip_ongoing_banner_title"),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade700,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  "LIVE",
+                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "${config.activeOngoingOrigin?.name} ➔ ${config.activeOngoingDest?.name} (${config.activeOngoingTrip?.depTime} - ${config.activeOngoingTrip?.arrTime})",
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            I18n.t(context, "trip_ongoing_banner_desc"),
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: I18n.t(context, "trip_ongoing_stop"),
+                      onPressed: () async {
+                        await NotificationService().stopOngoingTripNotification();
+                        config.stopOngoingTrip();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(I18n.t(context, "trip_ongoing_stopped_snack"))),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // Search Card
             Card(
               elevation: 2,

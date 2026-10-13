@@ -206,6 +206,16 @@ class _StationPickerModalState extends State<StationPickerModal> {
                     ),
                     const SizedBox(width: 8),
                   ],
+                  for (var q in config.recentSearches) ...[
+                    ActionChip(
+                      avatar: const Icon(Icons.history, size: 14, color: Colors.grey),
+                      label: Text(q, style: const TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        _searchCtrl.text = q;
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ],
               ),
             ),
