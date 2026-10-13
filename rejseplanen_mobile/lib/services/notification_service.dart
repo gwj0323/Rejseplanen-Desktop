@@ -141,7 +141,7 @@ class NotificationService {
   }
 
   /// Schedule trip reminders for departure, transfers, and arrival
-  Future<List<Map<String, dynamic>>> scheduleTripReminders({
+  Future<List<Map<String, dynamic>> > scheduleTripReminders({
     required TripProposal trip,
     required Station origin,
     required Station destination,
@@ -154,7 +154,7 @@ class NotificationService {
     await init();
     await requestPermission();
 
-    final List<Map<String, dynamic>>> scheduledReminders = [];
+    final List<Map<String, dynamic>> scheduledReminders = [];
     final DateTime now = DateTime.now();
 
     // 1. Departure Reminder (出发提醒)
