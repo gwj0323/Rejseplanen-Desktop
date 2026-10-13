@@ -251,9 +251,10 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: SizedBox(
-        width: 50,
-        child: Center(
+      leading: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 40, maxWidth: 84),
+        child: Align(
+          alignment: Alignment.centerLeft,
           child: TransitBadge(
             text: item.name,
             typeCode: item.type,

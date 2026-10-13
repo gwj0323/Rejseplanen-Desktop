@@ -49,6 +49,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final config = Provider.of<AppConfig>(context);
+    if (_keyCtrl.text.isEmpty && config.apiKey.isNotEmpty) {
+      _keyCtrl.text = config.apiKey;
+    }
+    if (_urlCtrl.text.isEmpty && config.baseUrl.isNotEmpty) {
+      _urlCtrl.text = config.baseUrl;
+    }
+  }
+
   Future<void> _testConnection() async {
     setState(() {
       _testing = true;
@@ -64,11 +76,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (mounted) {
+      final success = res["success"] as bool;
       setState(() {
         _testing = false;
-        _testSuccess = res["success"] as bool;
+        _testSuccess = success;
         _testResult = res["message"] as String;
       });
+      if (success) {
+        config.setApiKey(_keyCtrl.text);
+        config.setBaseUrl(_urlCtrl.text);
+      }
     }
   }
 
@@ -125,6 +142,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     onChanged: (val) => config.setApiKey(val),
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        config.hasApiKey ? Icons.check_circle_outline : Icons.info_outline,
+                        size: 14,
+                        color: config.hasApiKey ? Colors.green.shade600 : Colors.amber.shade800,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        config.hasApiKey
+                            ? "${I18n.t(context, "settings_api_status_saved")} (${config.apiKey.length} 位)"
+                            : I18n.t(context, "settings_api_status_none"),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: config.hasApiKey ? Colors.green.shade700 : Colors.amber.shade900,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 14),
 
                   Text(
@@ -154,6 +192,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               )
                             : const Icon(Icons.network_check, size: 18),
                         label: Text(I18n.t(context, "settings_test_conn_btn")),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton.icon(
+                        onPressed: () {
+                          final key = _keyCtrl.text.trim();
+                          final url = _urlCtrl.text.trim();
+                          config.setApiKey(key);
+                          config.setBaseUrl(url);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(I18n.t(context, "settings_saved_feedback")),
+                                ],
+                              ),
+                              backgroundColor: Colors.green.shade700,
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.save_outlined, size: 18),
+                        label: Text(I18n.t(context, "settings_save_btn")),
                       ),
                     ],
                   ),
@@ -234,10 +298,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: DropdownButton<String>(
                       value: config.language,
                       underline: const SizedBox(),
-                      items: const [
-                        DropdownMenuItem(value: "zh_CN", child: Text("简体中文")),
-                        DropdownMenuItem(value: "en_US", child: Text("English")),
-                        DropdownMenuItem(value: "da_DK", child: Text("Dansk")),
+                      items: [
+                        DropdownMenuItem(
+                          value: "system",
+                          child: Text(I18n.t(context, "lang_system")),
+                        ),
+                        const DropdownMenuItem(value: "zh_CN", child: Text("简体中文")),
+                        const DropdownMenuItem(value: "en_US", child: Text("English")),
+                        const DropdownMenuItem(value: "da_DK", child: Text("Dansk")),
                       ],
                       onChanged: (val) {
                         if (val != null) config.setLanguage(val);

@@ -129,13 +129,24 @@ class TransitBadgeHelper {
     // 4. Trains & Other
     final uName = rawName.toUpperCase();
     if (uName.startsWith("ICL") || typeCode.contains("ICL")) {
-      return TransitBadgeInfo(display: rawName, fullName: "InterCityLyn $rawName", bg: _hexToColor("#8E001A"), fg: Colors.white, isSingle: false, category: "ICL");
+      String num = rawName.replaceAll(RegExp(r'^(InterCityLyn|ICL)\s*', caseSensitive: false), '').trim();
+      String disp = num.isNotEmpty ? "ICL $num" : "ICL";
+      return TransitBadgeInfo(display: disp, fullName: "InterCityLyn $disp", bg: _hexToColor("#8E001A"), fg: Colors.white, isSingle: false, category: "ICL");
     }
     if (uName.startsWith("IC") || typeCode.contains("IC")) {
-      return TransitBadgeInfo(display: rawName, fullName: "InterCity $rawName", bg: _hexToColor("#C72027"), fg: Colors.white, isSingle: false, category: "IC");
+      String num = rawName.replaceAll(RegExp(r'^(InterCity|IC)\s*', caseSensitive: false), '').trim();
+      String disp = num.isNotEmpty ? "IC $num" : "IC";
+      return TransitBadgeInfo(display: disp, fullName: "InterCity $disp", bg: _hexToColor("#C72027"), fg: Colors.white, isSingle: false, category: "IC");
     }
-    if (uName.startsWith("RE") || typeCode.contains("RE")) {
-      return TransitBadgeInfo(display: rawName, fullName: "Regionaltog $rawName", bg: _hexToColor("#005776"), fg: Colors.white, isSingle: false, category: "RE");
+    if (uName.startsWith("REGIONAL") || uName.startsWith("RE") || typeCode.contains("RE")) {
+      String num = rawName.replaceAll(RegExp(r'^(Regionaltog|Regional|RE)\s*', caseSensitive: false), '').trim();
+      String disp = num.isNotEmpty ? "Re $num" : "Re";
+      return TransitBadgeInfo(display: disp, fullName: "Regionaltog $disp", bg: _hexToColor("#005776"), fg: Colors.white, isSingle: false, category: "RE");
+    }
+    if (uName.contains("ØRESUND") || uName.startsWith("ØT") || uName.startsWith("OT")) {
+      String num = rawName.replaceAll(RegExp(r'^(Øresundstog|Oresundstag|ØT|OT)\s*', caseSensitive: false), '').trim();
+      String disp = num.isNotEmpty ? "ØT $num" : "ØT";
+      return TransitBadgeInfo(display: disp, fullName: "Øresundstog $disp", bg: _hexToColor("#005776"), fg: Colors.white, isSingle: false, category: "RE");
     }
     if (uName.contains("LETBANE") || typeCode.contains("LETBANE")) {
       return TransitBadgeInfo(display: rawName, fullName: "Letbane $rawName", bg: _hexToColor("#7B1FA2"), fg: Colors.white, isSingle: false, category: "LETBANE");
@@ -182,12 +193,19 @@ class TransitBadge extends StatelessWidget {
     final h = height ?? 24.0;
     final w = info.isSingle ? h * 1.05 : null;
 
+    final double calcFontSize = fontSize ??
+        (info.isSingle
+            ? 13.0
+            : (info.display.length > 7
+                ? 10.0
+                : (info.display.length > 4 ? 11.0 : 12.0)));
+
     return Container(
       height: h,
       width: w,
       padding: info.isSingle
           ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(horizontal: 7.0),
+          : const EdgeInsets.symmetric(horizontal: 6.0),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: info.bg,
@@ -202,11 +220,14 @@ class TransitBadge extends StatelessWidget {
       ),
       child: Text(
         info.display,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.visible,
         style: TextStyle(
           color: info.fg,
           fontWeight: FontWeight.bold,
-          fontSize: fontSize ?? (info.isSingle ? 13.0 : 11.5),
-          letterSpacing: 0.3,
+          fontSize: calcFontSize,
+          letterSpacing: 0.2,
         ),
       ),
     );

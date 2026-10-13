@@ -1,15 +1,18 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/station.dart';
 
 class AppConfig extends ChangeNotifier {
   static const String _keySettings = 'rejseplanen_settings';
+  static const String _keyApiKey = 'rejseplanen_api_key';
+  static const String _keyBaseUrl = 'rejseplanen_base_url';
 
   String _apiKey = '';
   String _baseUrl = 'https://www.rejseplanen.dk/api';
   bool _mockFallback = true;
-  String _language = 'zh_CN'; // 'zh_CN', 'en_US', 'da_DK'
+  String _language = 'system'; // 'system' (Follow system), 'zh_CN', 'en_US', 'da_DK'
   ThemeMode _themeMode = ThemeMode.system;
   String _accentColor = 'system'; // 'system' (Material You) or hex like '#C72027'
   int _autoRefreshInterval = 30;
@@ -39,6 +42,19 @@ class AppConfig extends ChangeNotifier {
   String get baseUrl => _baseUrl;
   bool get mockFallback => _mockFallback;
   String get language => _language;
+
+  /// Effective language code ('zh_CN', 'en_US', 'da_DK') resolving 'system' to device locale
+  String get effectiveLanguage {
+    if (_language != 'system') return _language;
+    try {
+      final locale = ui.PlatformDispatcher.instance.locale;
+      final code = locale.languageCode.toLowerCase();
+      if (code == 'zh') return 'zh_CN';
+      if (code == 'da') return 'da_DK';
+    } catch (_) {}
+    return 'en_US';
+  }
+
   ThemeMode get themeMode => _themeMode;
   String get accentColor => _accentColor;
   bool get isSystemAccentColor => _accentColor == 'system';
@@ -70,13 +86,16 @@ class AppConfig extends ChangeNotifier {
   Future<void> loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final standaloneKey = prefs.getString(_keyApiKey);
+      final standaloneUrl = prefs.getString(_keyBaseUrl);
+
       final dataStr = prefs.getString(_keySettings);
       if (dataStr != null) {
         final data = jsonDecode(dataStr) as Map<String, dynamic>;
-        _apiKey = data['api_key'] ?? '';
-        _baseUrl = data['base_url'] ?? 'https://www.rejseplanen.dk/api';
+        _apiKey = standaloneKey ?? (data['api_key'] ?? '');
+        _baseUrl = standaloneUrl ?? (data['base_url'] ?? 'https://www.rejseplanen.dk/api');
         _mockFallback = data['mock_fallback'] ?? true;
-        _language = data['language'] ?? 'zh_CN';
+        _language = data['language'] ?? 'system';
         _autoRefreshInterval = data['auto_refresh_interval'] ?? 30;
         _accentColor = data['accent_color'] ?? 'system';
 
@@ -107,8 +126,12 @@ class AppConfig extends ChangeNotifier {
         if (data['recent_searches'] != null) {
           _recentSearches = List<String>.from(data['recent_searches']);
         }
-        notifyListeners();
+      } else {
+        if (standaloneKey != null) _apiKey = standaloneKey;
+        if (standaloneUrl != null) _baseUrl = standaloneUrl;
       }
+      debugPrint('[AppConfig] Loaded settings. apiKey: ${_apiKey.isNotEmpty ? "SET (${_apiKey.length} chars)" : "EMPTY"}, language: $_language');
+      notifyListeners();
     } catch (e) {
       debugPrint('[AppConfig] Error loading settings: $e');
     }
@@ -117,6 +140,9 @@ class AppConfig extends ChangeNotifier {
   Future<void> saveSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyApiKey, _apiKey);
+      await prefs.setString(_keyBaseUrl, _baseUrl);
+
       String themeStr = 'Auto';
       if (_themeMode == ThemeMode.light) themeStr = 'Light';
       if (_themeMode == ThemeMode.dark) themeStr = 'Dark';
@@ -137,6 +163,7 @@ class AppConfig extends ChangeNotifier {
         'recent_searches': _recentSearches,
       };
       await prefs.setString(_keySettings, jsonEncode(data));
+      debugPrint('[AppConfig] Saved settings to disk. apiKey length: ${_apiKey.length}');
       notifyListeners();
     } catch (e) {
       debugPrint('[AppConfig] Error saving settings: $e');
