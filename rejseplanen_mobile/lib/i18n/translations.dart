@@ -106,6 +106,16 @@ class I18n {
       "station_recent_searches": "最近搜索",
       "station_clear_recent": "清空",
 
+      // Journey Detail & Stops
+      "trip_view_stops": "查看途经站点",
+      "trip_hide_stops": "收起途经站点",
+      "trip_loading_stops": "正在加载经停站点...",
+      "trip_no_stops": "直达，无中间停靠站点",
+      "journey_stops_count": "{count} 个经停站",
+      "journey_detail_sheet_title": "车次时刻表与经停站点",
+      "journey_detail_origin_dest": "{line} ➔ 开往 {dest}",
+      "journey_detail_current_stop": "当前站",
+
       // Extra Screen Keys
       "station_go_settings": "去设置",
       "station_enable_gps": "开启GPS",
@@ -336,6 +346,16 @@ class I18n {
       "station_recent_searches": "Recent Searches",
       "station_clear_recent": "Clear",
 
+      // Journey Detail & Stops
+      "trip_view_stops": "View stops",
+      "trip_hide_stops": "Hide stops",
+      "trip_loading_stops": "Loading intermediate stops...",
+      "trip_no_stops": "Direct, no intermediate stops",
+      "journey_stops_count": "{count} stops",
+      "journey_detail_sheet_title": "Route & Stops Timetable",
+      "journey_detail_origin_dest": "{line} ➔ to {dest}",
+      "journey_detail_current_stop": "Current Stop",
+
       // Extra Screen Keys
       "station_go_settings": "Settings",
       "station_enable_gps": "Turn On GPS",
@@ -565,6 +585,16 @@ class I18n {
       "trip_calendar_error": "Kunne ikke tilføje til kalender, tjek tilladelser",
       "station_recent_searches": "Seneste søgninger",
       "station_clear_recent": "Ryd",
+
+      // Journey Detail & Stops
+      "trip_view_stops": "Se stop undervejs",
+      "trip_hide_stops": "Skjul stop",
+      "trip_loading_stops": "Henter stoppesteder...",
+      "trip_no_stops": "Direkte uden stop undervejs",
+      "journey_stops_count": "{count} stop",
+      "journey_detail_sheet_title": "Køreplan og stoppesteder",
+      "journey_detail_origin_dest": "{line} ➔ mod {dest}",
+      "journey_detail_current_stop": "Aktuelt stop",
 
       // Extra Screen Keys
       "station_go_settings": "Indstillinger",

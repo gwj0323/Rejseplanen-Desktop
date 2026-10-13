@@ -8,6 +8,7 @@ import 'transit_badge.dart';
 import 'trip_reminder_sheet.dart';
 import '../services/calendar_service.dart';
 import '../services/notification_service.dart';
+import '../services/api_client.dart';
 
 class TripCard extends StatefulWidget {
   final TripProposal trip;
@@ -27,6 +28,9 @@ class TripCard extends StatefulWidget {
 
 class _TripCardState extends State<TripCard> {
   bool _expanded = false;
+  final Set<int> _expandedLegs = {};
+  final Map<int, List<TripStop>> _legStopsCache = {};
+  final Set<int> _loadingLegs = {};
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +184,8 @@ class _TripCardState extends State<TripCard> {
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                for (var leg in trip.legs) _buildLegDetail(context, leg),
+                for (int i = 0; i < trip.legs.length; i++)
+                  _buildLegDetail(context, trip.legs[i], i),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -325,7 +330,7 @@ class _TripCardState extends State<TripCard> {
     );
   }
 
-  Widget _buildLegDetail(BuildContext context, TripLeg leg) {
+  Widget _buildLegDetail(BuildContext context, TripLeg leg, int legIdx) {
     final theme = Theme.of(context);
 
     return Container(
@@ -420,6 +425,217 @@ class _TripCardState extends State<TripCard> {
               style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
             ),
           ],
+          // Intermediate Stops Section (journeyDetail)
+          if (!leg.isWalk) ...[
+            const SizedBox(height: 8),
+            _buildStopsExpander(context, leg, legIdx),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStopsExpander(BuildContext context, TripLeg leg, int legIdx) {
+    final theme = Theme.of(context);
+    final isExpanded = _expandedLegs.contains(legIdx);
+    final isLoading = _loadingLegs.contains(legIdx);
+    final stops = _legStopsCache[legIdx] ?? leg.stops;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () async {
+            if (isExpanded) {
+              setState(() => _expandedLegs.remove(legIdx));
+            } else {
+              setState(() => _expandedLegs.add(legIdx));
+              if (!_legStopsCache.containsKey(legIdx)) {
+                if (leg.stops != null && leg.stops!.isNotEmpty) {
+                  setState(() => _legStopsCache[legIdx] = leg.stops!);
+                } else {
+                  setState(() => _loadingLegs.add(legIdx));
+                  final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
+                  final res = await client.getJourneyDetail(
+                    leg.journeyDetailRef ?? '',
+                    legName: leg.name,
+                    originName: leg.origin.name,
+                    destName: leg.destination.name,
+                    timeStr: leg.origin.time,
+                    dateStr: leg.origin.date,
+                  );
+                  if (mounted) {
+                    setState(() {
+                      _legStopsCache[legIdx] = res.data;
+                      _loadingLegs.remove(legIdx);
+                    });
+                  }
+                }
+              }
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isExpanded
+                      ? I18n.t(context, "trip_hide_stops")
+                      : (stops != null && stops.isNotEmpty
+                          ? "${I18n.t(context, 'trip_view_stops')} (${stops.length})"
+                          : I18n.t(context, "trip_view_stops")),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isExpanded) ...[
+          if (isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    I18n.t(context, "trip_loading_stops"),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            )
+          else if (stops != null && stops.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.withOpacity(0.12)),
+              ),
+              child: Column(
+                children: [
+                  for (int sIdx = 0; sIdx < stops.length; sIdx++)
+                    _buildStopTimelineRow(
+                      context,
+                      stops[sIdx],
+                      isFirst: sIdx == 0,
+                      isLast: sIdx == stops.length - 1,
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStopTimelineRow(
+    BuildContext context,
+    TripStop stop, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    final theme = Theme.of(context);
+    final isTerminal = isFirst || isLast;
+    final hasDelay = stop.rtTime.isNotEmpty && stop.rtTime != stop.time;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 44,
+            child: Text(
+              stop.time,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isTerminal ? FontWeight.bold : FontWeight.w500,
+                color: isTerminal ? theme.colorScheme.onSurface : Colors.grey.shade600,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 18,
+            child: Column(
+              children: [
+                Expanded(
+                  child: isFirst
+                      ? const SizedBox()
+                      : Center(child: Container(width: 1.5, color: Colors.grey.shade300)),
+                ),
+                Container(
+                  width: isTerminal ? 9 : 6,
+                  height: isTerminal ? 9 : 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isTerminal ? theme.colorScheme.primary : Colors.grey.shade400,
+                    border: isTerminal ? Border.all(color: Colors.white, width: 1.5) : null,
+                  ),
+                ),
+                Expanded(
+                  child: isLast
+                      ? const SizedBox()
+                      : Center(child: Container(width: 1.5, color: Colors.grey.shade300)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      stop.name,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isTerminal ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (hasDelay)
+                    Container(
+                      margin: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        stop.rtTime,
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                      ),
+                    ),
+                  if (stop.track.isNotEmpty && stop.track != '-')
+                    Text(
+                      "Spor ${stop.track}",
+                      style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

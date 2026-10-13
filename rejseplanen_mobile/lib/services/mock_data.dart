@@ -441,9 +441,101 @@ class MockData {
               rtTime: t(54),
             ),
             notes: "",
+            journeyDetailRef: "mock_5c",
           ),
         ],
       ),
+    ];
+  }
+
+  /// Generate mock intermediate stop timetable for journeyDetail
+  static List<TripStop> getJourneyStops({
+    String? legName,
+    String? originName,
+    String? destName,
+    String? timeStr,
+    String? dateStr,
+  }) {
+    final now = DateTime.now();
+    final dStr = dateStr ?? DateFormat('yyyy-MM-dd').format(now);
+    final baseTime = (timeStr != null && timeStr.contains(':'))
+        ? timeStr
+        : DateFormat('HH:mm').format(now);
+
+    int startHour = 12, startMin = 0;
+    try {
+      final tp = baseTime.split(':');
+      startHour = int.parse(tp[0]);
+      startMin = int.parse(tp[1]);
+    } catch (_) {}
+
+    String addMin(int delta) {
+      int total = startHour * 60 + startMin + delta;
+      int h = (total ~/ 60) % 24;
+      int m = total % 60;
+      return "${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}";
+    }
+
+    final orig = originName?.trim() ?? "København H";
+    final dest = destName?.trim() ?? "Nørreport St.";
+    final name = (legName ?? "").toUpperCase();
+
+    // 1. S-tog A (Hundige - Hillerød via København H & Nørreport)
+    if (name.contains("A") || (orig.contains("København") && dest.contains("Nørreport"))) {
+      return [
+        TripStop(name: "København H", time: addMin(0), date: dStr, track: "9", rtTime: addMin(0)),
+        TripStop(name: "Vesterport St.", time: addMin(2), date: dStr, track: "1", rtTime: addMin(2)),
+        TripStop(name: "Nørreport St.", time: addMin(4), date: dStr, track: "1", rtTime: addMin(4)),
+        TripStop(name: "Østerport St.", time: addMin(7), date: dStr, track: "1", rtTime: addMin(7)),
+        TripStop(name: "Nordhavn St.", time: addMin(9), date: dStr, track: "1", rtTime: addMin(9)),
+        TripStop(name: "Svanemøllen St.", time: addMin(11), date: dStr, track: "1", rtTime: addMin(11)),
+        TripStop(name: "Hellerup St.", time: addMin(14), date: dStr, track: "2", rtTime: addMin(14)),
+      ];
+    }
+
+    // 2. Metro M2 (Vanløse - CPH Lufthavn via Nørreport)
+    if (name.contains("M2") || dest.contains("Lufthavn")) {
+      return [
+        TripStop(name: "Nørreport St.", time: addMin(0), date: dStr, track: "M2", rtTime: addMin(0)),
+        TripStop(name: "Kongens Nytorv St.", time: addMin(2), date: dStr, track: "M2", rtTime: addMin(2)),
+        TripStop(name: "Christianshavn St.", time: addMin(4), date: dStr, track: "M2", rtTime: addMin(4)),
+        TripStop(name: "Amagerbro St.", time: addMin(6), date: dStr, track: "M2", rtTime: addMin(6)),
+        TripStop(name: "Lergravsparken St.", time: addMin(8), date: dStr, track: "M2", rtTime: addMin(8)),
+        TripStop(name: "Øresund St.", time: addMin(10), date: dStr, track: "M2", rtTime: addMin(10)),
+        TripStop(name: "Amager Strand St.", time: addMin(12), date: dStr, track: "M2", rtTime: addMin(12)),
+        TripStop(name: "Femøren St.", time: addMin(14), date: dStr, track: "M2", rtTime: addMin(14)),
+        TripStop(name: "Kastrup St.", time: addMin(16), date: dStr, track: "M2", rtTime: addMin(16)),
+        TripStop(name: "CPH Lufthavn", time: addMin(18), date: dStr, track: "M2", rtTime: addMin(18)),
+      ];
+    }
+
+    // 3. Regionaltog / IC (København H - Aarhus / Odense)
+    if (name.contains("IC") || name.contains("RE") || dest.contains("Aarhus") || dest.contains("Odense") || dest.contains("Østerport")) {
+      return [
+        TripStop(name: "København H", time: addMin(0), date: dStr, track: "5", rtTime: addMin(0)),
+        TripStop(name: "Vesterport St.", time: addMin(2), date: dStr, track: "2", rtTime: addMin(2)),
+        TripStop(name: "Nørreport St.", time: addMin(4), date: dStr, track: "2", rtTime: addMin(4)),
+        TripStop(name: "Østerport St.", time: addMin(7), date: dStr, track: "2", rtTime: addMin(7)),
+      ];
+    }
+
+    // 4. Bus 5C
+    if (name.contains("5C")) {
+      return [
+        TripStop(name: "Nørreport St.", time: addMin(0), date: dStr, track: "-", rtTime: addMin(0)),
+        TripStop(name: "Nørre Voldgade", time: addMin(2), date: dStr, track: "-", rtTime: addMin(2)),
+        TripStop(name: "Rådhuspladsen", time: addMin(5), date: dStr, track: "-", rtTime: addMin(5)),
+        TripStop(name: "Stormbroen, Nationalmuseet", time: addMin(8), date: dStr, track: "-", rtTime: addMin(8)),
+        TripStop(name: "Kongens Nytorv St.", time: addMin(12), date: dStr, track: "-", rtTime: addMin(12)),
+      ];
+    }
+
+    // Default stops
+    return [
+      TripStop(name: orig, time: addMin(0), date: dStr, track: "1", rtTime: addMin(0)),
+      TripStop(name: "$orig C", time: addMin(3), date: dStr, track: "1", rtTime: addMin(3)),
+      TripStop(name: "$dest Syd", time: addMin(7), date: dStr, track: "2", rtTime: addMin(7)),
+      TripStop(name: dest, time: addMin(12), date: dStr, track: "2", rtTime: addMin(12)),
     ];
   }
 }
