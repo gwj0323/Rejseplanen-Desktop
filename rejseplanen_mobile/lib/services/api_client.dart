@@ -236,7 +236,7 @@ class RejseplanenApiClient {
           lon: s.lon,
           types: s.types,
           desc: s.desc,
-          distance: "距您 ${LocationService.formatDistance(lat, lon, s.lat, s.lon)}",
+          distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
         );
       }).toList();
       return ApiResult(

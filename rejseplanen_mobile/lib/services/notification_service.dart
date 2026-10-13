@@ -5,6 +5,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/trip.dart';
 import '../models/station.dart';
+import '../i18n/translations.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -171,7 +172,7 @@ class NotificationService {
   }
 
   /// Schedule trip reminders for departure, transfers, and arrival
-  Future<List<Map<String, dynamic>> > scheduleTripReminders({
+  Future<List<Map<String, dynamic>>> scheduleTripReminders({
     required TripProposal trip,
     required Station origin,
     required Station destination,
@@ -180,6 +181,7 @@ class NotificationService {
     bool enableTransfer = true,
     bool enableArrival = true,
     int arrAdvanceMinutes = 5,
+    String lang = 'en_US',
   }) async {
     await init();
     await requestPermission();
@@ -193,13 +195,18 @@ class NotificationService {
       final triggerTime = depDateTime.subtract(Duration(minutes: depAdvanceMinutes));
       final int depId = (trip.idx.hashCode + 101).abs() % 100000;
 
-      final firstLegName = trip.legs.isNotEmpty ? trip.legs.first.name : '车次';
+      final firstLegName = trip.legs.isNotEmpty ? trip.legs.first.name : I18n.tr('notif_transit_fallback', lang);
       final platform = trip.legs.isNotEmpty && trip.legs.first.origin.track.isNotEmpty && trip.legs.first.origin.track != '-'
-          ? '（${trip.legs.first.origin.track} 站台）'
+          ? I18n.tr('notif_track_suffix', lang, {'track': trip.legs.first.origin.track})
           : '';
 
-      final title = '🚆 出发提醒：$firstLegName 即将发车';
-      final body = '计划 ${trip.depTime} 从 ${origin.name} 出发前往 ${destination.name}$platform，请提前检票候车！';
+      final title = I18n.tr('notif_dep_title', lang, {'line': firstLegName});
+      final body = I18n.tr('notif_dep_body', lang, {
+        'time': trip.depTime,
+        'origin': origin.name,
+        'dest': destination.name,
+        'track': platform,
+      });
 
       if (triggerTime.isAfter(now)) {
         await _scheduleSingle(depId, title, body, triggerTime, 'dep');
@@ -237,11 +244,17 @@ class NotificationService {
         final int transferId = (trip.idx.hashCode + 200 + i).abs() % 100000;
 
         final nextPlatform = nextLeg.origin.track.isNotEmpty && nextLeg.origin.track != '-'
-            ? '（${nextLeg.origin.track} 站台）'
+            ? I18n.tr('notif_track_suffix', lang, {'track': nextLeg.origin.track})
             : '';
 
-        final title = '🔄 换乘提醒：准备在 ${currentLeg.destination.name} 换乘';
-        final body = '列车即将在 ${currentLeg.destination.time} 到达 ${currentLeg.destination.name}。请准备换乘 ${nextLeg.name}$nextPlatform，下一程发车时间为 ${nextLeg.origin.time}。';
+        final title = I18n.tr('notif_transfer_title', lang, {'station': currentLeg.destination.name});
+        final body = I18n.tr('notif_transfer_body', lang, {
+          'arrTime': currentLeg.destination.time,
+          'station': currentLeg.destination.name,
+          'nextLine': nextLeg.name,
+          'nextTrack': nextPlatform,
+          'depTime': nextLeg.origin.time,
+        });
 
         if (triggerTime.isAfter(now)) {
           await _scheduleSingle(transferId, title, body, triggerTime, 'transfer_$i');
@@ -262,8 +275,11 @@ class NotificationService {
       final triggerTime = arrDateTime.subtract(Duration(minutes: arrAdvanceMinutes));
       final int arrId = (trip.idx.hashCode + 301).abs() % 100000;
 
-      final title = '📍 下车提醒：即将到达终点站 ${destination.name}';
-      final body = '列车预计将在 ${trip.arrTime} 到达终点站 ${destination.name}，请提前收拾随身行李物品，注意下车安全！';
+      final title = I18n.tr('notif_arr_title', lang, {'station': destination.name});
+      final body = I18n.tr('notif_arr_body', lang, {
+        'time': trip.arrTime,
+        'station': destination.name,
+      });
 
       if (triggerTime.isAfter(now)) {
         await _scheduleSingle(arrId, title, body, triggerTime, 'arr');

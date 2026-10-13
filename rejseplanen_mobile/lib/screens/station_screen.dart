@@ -99,12 +99,12 @@ class _StationScreenState extends State<StationScreen> {
           content: Text(I18n.t(context, errorKey)),
           action: locResult.isPermissionDeniedForever
               ? SnackBarAction(
-                  label: "去设置",
+                  label: I18n.t(context, "station_go_settings"),
                   onPressed: () => LocationService.openAppSettings(),
                 )
               : (locResult.isServiceDisabled
                   ? SnackBarAction(
-                      label: "开启GPS",
+                      label: I18n.t(context, "station_enable_gps"),
                       onPressed: () => LocationService.openLocationSettings(),
                     )
                   : null),
@@ -186,7 +186,7 @@ class _StationScreenState extends State<StationScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Text(
-                "搜索结果 (${_searchResults.length})",
+                I18n.t(context, "station_search_results_count", {"count": "${_searchResults.length}"}),
                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
@@ -215,7 +215,7 @@ class _StationScreenState extends State<StationScreen> {
                       ),
                       TextButton(
                         onPressed: () => LocationService.openAppSettings(),
-                        child: const Text("去设置开启"),
+                        child: Text(I18n.t(context, "station_perm_denied_btn")),
                       ),
                     ],
                   ),
@@ -244,7 +244,7 @@ class _StationScreenState extends State<StationScreen> {
                       ),
                       TextButton(
                         onPressed: () => LocationService.openLocationSettings(),
-                        child: const Text("开启定位"),
+                        child: Text(I18n.t(context, "station_gps_disabled_btn")),
                       ),
                     ],
                   ),

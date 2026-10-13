@@ -75,6 +75,29 @@ class I18n {
       "reminder_perm_dialog_body": "手机系统尚未允许 Rejseplanen 发送通知。请在系统设置中开启「允许通知」，否则将无法收到行程提醒。",
       "reminder_perm_open_settings": "打开系统设置",
       "common_cancel": "取消",
+      "reminder_dep_preview": "预览：预计将在发车前 {mins} 分钟提醒前往站台乘车",
+      "reminder_transfer_count": "{count} 次换乘",
+      "reminder_transfer_preview": "到达中转站前 5 分钟提醒换乘并提示下一程车次及站台",
+      "reminder_arr_preview": "到达终点站 {station} 前 {mins} 分钟提醒收拾行李下车",
+
+      // Notification Push Messages
+      "notif_dep_title": "🚆 出发提醒：{line} 即将发车",
+      "notif_dep_body": "计划 {time} 从 {origin} 出发前往 {dest}{track}，请提前检票候车！",
+      "notif_transfer_title": "🔄 换乘提醒：准备在 {station} 换乘",
+      "notif_transfer_body": "列车即将在 {arrTime} 到达 {station}。请准备换乘 {nextLine}{nextTrack}，下一程发车时间为 {depTime}。",
+      "notif_arr_title": "📍 下车提醒：即将到达终点站 {station}",
+      "notif_arr_body": "列车预计将在 {time} 到达终点站 {station}，请提前收拾随身行李物品，注意下车安全！",
+      "notif_track_suffix": "（{track} 站台）",
+      "notif_transit_fallback": "车次",
+
+      // Extra Screen Keys
+      "station_go_settings": "去设置",
+      "station_enable_gps": "开启GPS",
+      "station_search_results_count": "搜索结果 ({count})",
+      "station_perm_denied_btn": "去设置开启",
+      "station_gps_disabled_btn": "开启定位",
+      "trip_results_count": "{count} 条路线",
+      "settings_key_chars": "{count} 位",
 
       // Board
       "board_title": "实时大屏",
@@ -266,6 +289,29 @@ class I18n {
       "reminder_perm_dialog_body": "Notifications are disabled for Rejseplanen. Please enable notifications in system settings to receive timely trip alerts.",
       "reminder_perm_open_settings": "Open Settings",
       "common_cancel": "Cancel",
+      "reminder_dep_preview": "Preview: Will alert {mins} mins before departure to head to the track",
+      "reminder_transfer_count": "{count} transfers",
+      "reminder_transfer_preview": "Alert sent 5 mins before transfer station with next line and track info",
+      "reminder_arr_preview": "Alert will be sent {mins} mins before reaching {station} to get ready",
+
+      // Notification Push Messages
+      "notif_dep_title": "🚆 Departure Alert: {line} departing soon",
+      "notif_dep_body": "Scheduled {time} from {origin} to {dest}{track}. Please be ready!",
+      "notif_transfer_title": "🔄 Transfer Alert: Prepare to change at {station}",
+      "notif_transfer_body": "Arriving at {station} at {arrTime}. Prepare to transfer to {nextLine}{nextTrack}, departing at {depTime}.",
+      "notif_arr_title": "📍 Arrival Alert: Approaching final stop {station}",
+      "notif_arr_body": "Estimated arrival at {station} at {time}. Please remember your belongings and prepare to exit!",
+      "notif_track_suffix": " (Track {track})",
+      "notif_transit_fallback": "Transit",
+
+      // Extra Screen Keys
+      "station_go_settings": "Settings",
+      "station_enable_gps": "Turn On GPS",
+      "station_search_results_count": "Search Results ({count})",
+      "station_perm_denied_btn": "Open Settings",
+      "station_gps_disabled_btn": "Turn On Location",
+      "trip_results_count": "{count} routes",
+      "settings_key_chars": "{count} chars",
 
       // Board
       "board_title": "Live Departures",
@@ -457,6 +503,29 @@ class I18n {
       "reminder_perm_dialog_body": "Notifikationer er deaktiveret for Rejseplanen. Tillad venligst notifikationer i systemindstillinger.",
       "reminder_perm_open_settings": "Åbn indstillinger",
       "common_cancel": "Annuller",
+      "reminder_dep_preview": "Forhåndsvisning: Påmindelse sendes {mins} min før afgang for at gå til sporet",
+      "reminder_transfer_count": "{count} skift",
+      "reminder_transfer_preview": "Advarsel sendes 5 min før skiftestation med information om næste linje og spor",
+      "reminder_arr_preview": "Påmindelse sendes {mins} min før ankomst til {station} om at stige af",
+
+      // Notification Push Messages
+      "notif_dep_title": "🚆 Afgangspåmindelse: {line} afgår snart",
+      "notif_dep_body": "Planlagt afgang {time} fra {origin} mod {dest}{track}. Vær klar på perronen!",
+      "notif_transfer_title": "🔄 Skiftepåmindelse: Forbered skift på {station}",
+      "notif_transfer_body": "Ankommer til {station} kl. {arrTime}. Skift til {nextLine}{nextTrack}, som afgår kl. {depTime}.",
+      "notif_arr_title": "📍 Ankomstpåmindelse: Nærmer sig endestation {station}",
+      "notif_arr_body": "Forventet ankomst til {station} kl. {time}. Husk al din bagage og gør klar til at stige af!",
+      "notif_track_suffix": " (Spor {track})",
+      "notif_transit_fallback": "Tog/Bus",
+
+      // Extra Screen Keys
+      "station_go_settings": "Indstillinger",
+      "station_enable_gps": "Aktivér GPS",
+      "station_search_results_count": "Søgeresultater ({count})",
+      "station_perm_denied_btn": "Åbn indstillinger",
+      "station_gps_disabled_btn": "Slå placering til",
+      "trip_results_count": "{count} ruter",
+      "settings_key_chars": "{count} tegn",
 
       // Board
       "board_title": "Afgangstavle",
@@ -578,15 +647,21 @@ class I18n {
     }
   };
 
-  static String t(BuildContext context, String key) {
+  static String t(BuildContext context, String key, [Map<String, String>? params]) {
     final lang = Provider.of<AppConfig>(context, listen: true).effectiveLanguage;
-    return _translations[lang]?[key] ??
+    String str = _translations[lang]?[key] ??
         _translations['en_US']?[key] ??
         _translations['zh_CN']?[key] ??
         key;
+    if (params != null) {
+      params.forEach((k, v) {
+        str = str.replaceAll('{$k}', v);
+      });
+    }
+    return str;
   }
 
-  static String tr(String key, String lang) {
+  static String tr(String key, String lang, [Map<String, String>? params]) {
     String resolved = lang;
     if (resolved == 'system') {
       try {
@@ -603,9 +678,15 @@ class I18n {
         resolved = 'en_US';
       }
     }
-    return _translations[resolved]?[key] ??
+    String str = _translations[resolved]?[key] ??
         _translations['en_US']?[key] ??
         _translations['zh_CN']?[key] ??
         key;
+    if (params != null) {
+      params.forEach((k, v) {
+        str = str.replaceAll('{$k}', v);
+      });
+    }
+    return str;
   }
 }
