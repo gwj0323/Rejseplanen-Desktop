@@ -168,7 +168,10 @@ class RejseplanenApiClient {
   Future<ApiResult<List<Station>>> searchLocations(String query) async {
     final key = config.apiKey.trim();
     if (key.isEmpty) {
-      return ApiResult(data: MockData.searchStations(query), isMock: true);
+      if (config.mockFallback) {
+        return ApiResult(data: MockData.searchStations(query), isMock: true);
+      }
+      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
     }
 
     try {
@@ -223,48 +226,54 @@ class RejseplanenApiClient {
 
     // If user is clearly outside Denmark (e.g. testing from China or outside Nordic region)
     if (!userInDenmark) {
-      final mock = List<Station>.from(MockData.stations);
-      mock.sort((a, b) =>
-          ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
-              .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
-      final withDist = mock.take(maxNo).map((s) {
-        return Station(
-          id: s.id,
-          extId: s.extId,
-          name: s.name,
-          lat: s.lat,
-          lon: s.lon,
-          types: s.types,
-          desc: s.desc,
-          distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
+      if (config.mockFallback) {
+        final mock = List<Station>.from(MockData.stations);
+        mock.sort((a, b) =>
+            ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
+                .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
+        final withDist = mock.take(maxNo).map((s) {
+          return Station(
+            id: s.id,
+            extId: s.extId,
+            name: s.name,
+            lat: s.lat,
+            lon: s.lon,
+            types: s.types,
+            desc: s.desc,
+            distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
+          );
+        }).toList();
+        return ApiResult(
+          data: withDist,
+          isMock: true,
+          error: "OUTSIDE_DENMARK",
         );
-      }).toList();
-      return ApiResult(
-        data: withDist,
-        isMock: true,
-        error: "OUTSIDE_DENMARK",
-      );
+      }
+      return ApiResult(data: [], isMock: false, error: "OUTSIDE_DENMARK");
     }
 
     final key = config.apiKey.trim();
     if (key.isEmpty) {
-      final mock = List<Station>.from(MockData.stations);
-      mock.sort((a, b) =>
-          ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
-              .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
-      final withDist = mock.take(maxNo).map((s) {
-        return Station(
-          id: s.id,
-          extId: s.extId,
-          name: s.name,
-          lat: s.lat,
-          lon: s.lon,
-          types: s.types,
-          desc: s.desc,
-          distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
-        );
-      }).toList();
-      return ApiResult(data: withDist, isMock: true);
+      if (config.mockFallback) {
+        final mock = List<Station>.from(MockData.stations);
+        mock.sort((a, b) =>
+            ((a.lat - lat) * (a.lat - lat) + (a.lon - lon) * (a.lon - lon))
+                .compareTo((b.lat - lat) * (b.lat - lat) + (b.lon - lon) * (b.lon - lon)));
+        final withDist = mock.take(maxNo).map((s) {
+          return Station(
+            id: s.id,
+            extId: s.extId,
+            name: s.name,
+            lat: s.lat,
+            lon: s.lon,
+            types: s.types,
+            desc: s.desc,
+            distance: LocationService.formatDistance(lat, lon, s.lat, s.lon),
+          );
+        }).toList();
+        return ApiResult(data: withDist, isMock: true);
+      }
+      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
     }
 
     try {
@@ -344,7 +353,10 @@ class RejseplanenApiClient {
   }) async {
     final key = config.apiKey.trim();
     if (key.isEmpty) {
-      return ApiResult(data: MockData.getDepartures(stationId), isMock: true);
+      if (config.mockFallback) {
+        return ApiResult(data: MockData.getDepartures(stationId), isMock: true);
+      }
+      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
     }
 
     try {
@@ -447,7 +459,10 @@ class RejseplanenApiClient {
   }) async {
     final key = config.apiKey.trim();
     if (key.isEmpty) {
-      return ApiResult(data: MockData.getArrivals(stationId), isMock: true);
+      if (config.mockFallback) {
+        return ApiResult(data: MockData.getArrivals(stationId), isMock: true);
+      }
+      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
     }
 
     try {
@@ -543,7 +558,10 @@ class RejseplanenApiClient {
   }) async {
     final key = config.apiKey.trim();
     if (key.isEmpty) {
-      return ApiResult(data: MockData.getTrips(originId, destId), isMock: true);
+      if (config.mockFallback) {
+        return ApiResult(data: MockData.getTrips(originId, destId), isMock: true);
+      }
+      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
     }
 
     try {
@@ -758,13 +776,16 @@ class RejseplanenApiClient {
       }
     }
 
-    final mockStops = MockData.getJourneyStops(
-      legName: legName,
-      originName: originName,
-      destName: destName,
-      timeStr: timeStr,
-      dateStr: dateStr,
-    );
-    return ApiResult(data: mockStops, isMock: true);
+    if (config.mockFallback) {
+      final mockStops = MockData.getJourneyStops(
+        legName: legName,
+        originName: originName,
+        destName: destName,
+        timeStr: timeStr,
+        dateStr: dateStr,
+      );
+      return ApiResult(data: mockStops, isMock: true);
+    }
+    return ApiResult(data: [], isMock: false, error: "未获取到经停站信息");
   }
 }

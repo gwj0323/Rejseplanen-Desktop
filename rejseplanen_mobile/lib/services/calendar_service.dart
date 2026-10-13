@@ -1,10 +1,47 @@
 import 'package:flutter/foundation.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/trip.dart';
 import '../models/station.dart';
 import '../i18n/translations.dart';
 
 class CalendarService {
+  /// Checks and requests calendar permissions from the operating system
+  static Future<bool> requestCalendarPermission() async {
+    try {
+      final fullStatus = await Permission.calendarFullAccess.status;
+      if (fullStatus.isGranted) return true;
+
+      final writeStatus = await Permission.calendarWriteOnly.status;
+      if (writeStatus.isGranted) return true;
+
+      final reqFull = await Permission.calendarFullAccess.request();
+      if (reqFull.isGranted) return true;
+
+      final reqWrite = await Permission.calendarWriteOnly.request();
+      if (reqWrite.isGranted) return true;
+
+      final legacyStatus = await Permission.calendar.status;
+      if (legacyStatus.isGranted) return true;
+      final reqLegacy = await Permission.calendar.request();
+      return reqLegacy.isGranted;
+    } catch (e) {
+      debugPrint('[CalendarService] Error checking/requesting permission: $e');
+      return true;
+    }
+  }
+
+  /// Checks if calendar permissions have been permanently denied by the user
+  static Future<bool> isPermanentlyDenied() async {
+    try {
+      final full = await Permission.calendarFullAccess.status;
+      final write = await Permission.calendarWriteOnly.status;
+      final legacy = await Permission.calendar.status;
+      return full.isPermanentlyDenied || write.isPermanentlyDenied || legacy.isPermanentlyDenied;
+    } catch (_) {
+      return false;
+    }
+  }
   static DateTime _parseDateTime(String timeStr, String dateStr, DateTime fallback) {
     try {
       int year = fallback.year;
@@ -52,6 +89,9 @@ class CalendarService {
     String lang = 'zh_CN',
   }) async {
     try {
+      // 1. Request calendar permission from the operating system
+      await requestCalendarPermission();
+
       final now = DateTime.now();
       final String firstLegDate = trip.legs.isNotEmpty ? trip.legs.first.origin.date : '';
       final String lastLegDate = trip.legs.isNotEmpty ? trip.legs.last.destination.date : '';
