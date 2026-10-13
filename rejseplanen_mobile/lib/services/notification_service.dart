@@ -25,10 +25,15 @@ class NotificationService {
     // 1. Initialize timezone database
     try {
       tz.initializeTimeZones();
+      final String timeZoneName = DateTime.now().timeZoneName;
       try {
-        tz.setLocalLocation(tz.getLocation('Europe/Copenhagen'));
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
       } catch (_) {
-        tz.setLocalLocation(tz.getLocation('UTC'));
+        try {
+          tz.setLocalLocation(tz.getLocation('Europe/Copenhagen'));
+        } catch (_) {
+          tz.setLocalLocation(tz.getLocation('UTC'));
+        }
       }
     } catch (e) {
       debugPrint('[NotificationService] Timezone init error: $e');
@@ -103,15 +108,17 @@ class NotificationService {
       // 1. Request via permission_handler (pops up native Android OS dialog)
       final status = await Permission.notification.request();
       debugPrint('[NotificationService] Permission.notification.request() status: $status');
-      if (status.isGranted) return true;
 
-      // 2. Fallback to flutter_local_notifications plugin request
+      // 2. Request notification & exact alarms via flutter_local_notifications plugin
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
-        final bool? granted = await androidPlugin.requestNotificationsPermission();
-        debugPrint('[NotificationService] requestNotificationsPermission result: $granted');
-        if (granted == true) return true;
+        await androidPlugin.requestNotificationsPermission();
+        try {
+          await androidPlugin.requestExactAlarmsPermission();
+        } catch (_) {}
+
+        if (status.isGranted) return true;
         return (await androidPlugin.areNotificationsEnabled()) ?? false;
       }
       return status.isGranted;
@@ -141,6 +148,9 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
+        category: AndroidNotificationCategory.reminder,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -265,6 +275,16 @@ class NotificationService {
             'title': title,
             'body': body,
           });
+        } else if (transferArrTime.isAfter(now)) {
+          // Imminent transfer: within 5 minutes of transfer station
+          await showInstantNotification(id: transferId, title: title, body: body, payload: 'transfer_$i');
+          scheduledReminders.add({
+            'type': 'transfer_now',
+            'id': transferId,
+            'time': now,
+            'title': title,
+            'body': body,
+          });
         }
       }
     }
@@ -290,6 +310,16 @@ class NotificationService {
           'title': title,
           'body': body,
         });
+      } else if (arrDateTime.isAfter(now)) {
+        // Imminent arrival: within advance minutes of arrival, alert immediately
+        await showInstantNotification(id: arrId, title: title, body: body, payload: 'arr');
+        scheduledReminders.add({
+          'type': 'arrival_now',
+          'id': arrId,
+          'time': now,
+          'title': title,
+          'body': body,
+        });
       }
     }
 
@@ -298,7 +328,15 @@ class NotificationService {
 
   Future<void> _scheduleSingle(int id, String title, String body, DateTime triggerTime, String payload) async {
     try {
-      final tz.TZDateTime tzTime = tz.TZDateTime.from(triggerTime, tz.local);
+      final durationFromNow = triggerTime.difference(DateTime.now());
+      if (durationFromNow.isNegative) {
+        debugPrint('[NotificationService] Trigger time $triggerTime is already in the past, firing instant notification');
+        await showInstantNotification(id: id, title: title, body: body, payload: payload);
+        return;
+      }
+
+      // Safe TZDateTime calculated relative to current local time to prevent timezone skew
+      final tz.TZDateTime tzTime = tz.TZDateTime.now(tz.local).add(durationFromNow);
 
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         channelId,
@@ -309,21 +347,40 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
+        category: AndroidNotificationCategory.reminder,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
 
-      await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tzTime,
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        payload: payload,
-      );
-      debugPrint('[NotificationService] Scheduled notification $id at $tzTime');
+      // Attempt exact schedule first (for punctual alarms), fallback to inexact if permission denied
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          payload: payload,
+        );
+        debugPrint('[NotificationService] Scheduled notification $id (exact) at $tzTime (in ${durationFromNow.inMinutes}m ${durationFromNow.inSeconds % 60}s)');
+      } catch (exactErr) {
+        debugPrint('[NotificationService] exactAllowWhileIdle failed ($exactErr), falling back to inexactAllowWhileIdle');
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          payload: payload,
+        );
+        debugPrint('[NotificationService] Scheduled notification $id (inexact fallback) at $tzTime');
+      }
     } catch (e) {
       debugPrint('[NotificationService] Error scheduling notification $id: $e');
     }
