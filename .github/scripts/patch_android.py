@@ -10,6 +10,8 @@ def patch():
         perms = """    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.network" android:required="false"/>
 """
         if "android.permission.ACCESS_FINE_LOCATION" not in content:
             content = content.replace("<application", perms + "    <application")

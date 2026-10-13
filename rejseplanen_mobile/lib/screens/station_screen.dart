@@ -27,11 +27,13 @@ class _StationScreenState extends State<StationScreen> {
   List<Station> _nearbyResults = [];
   bool _loadingNearby = false;
   bool _locatingGps = false;
+  LocationResult? _lastLocationResult;
 
   @override
   void initState() {
     super.initState();
-    _loadNearby();
+    // Automatically request GPS location & search nearby stops when entering screen
+    _locateCurrentPosition();
   }
 
   @override
@@ -60,7 +62,7 @@ class _StationScreenState extends State<StationScreen> {
   void _loadNearby() {
     setState(() => _loadingNearby = true);
     final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
-    client.nearbyStops(_lat, _lon, maxNo: 10).then((res) {
+    client.nearbyStops(_lat, _lon, maxNo: 12).then((res) {
       if (mounted) {
         setState(() {
           _nearbyResults = res.data;
@@ -75,22 +77,37 @@ class _StationScreenState extends State<StationScreen> {
     final locResult = await LocationService.getCurrentPosition();
     if (!mounted) return;
 
+    setState(() {
+      _lastLocationResult = locResult;
+      _locatingGps = false;
+    });
+
     if (locResult.isSuccess && locResult.lat != null && locResult.lon != null) {
       setState(() {
         _lat = locResult.lat!;
         _lon = locResult.lon!;
         _currentPositionLabel =
             "${locResult.lat!.toStringAsFixed(4)}, ${locResult.lon!.toStringAsFixed(4)}";
-        _locatingGps = false;
       });
       _loadNearby();
     } else {
-      setState(() => _locatingGps = false);
+      // Fallback to load default/preset stations so user sees content
+      _loadNearby();
       final errorKey = locResult.errorKey ?? "location_error";
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(I18n.t(context, errorKey)),
-          backgroundColor: Colors.orange.shade800,
+          action: locResult.isPermissionDeniedForever
+              ? SnackBarAction(
+                  label: "去设置",
+                  onPressed: () => LocationService.openAppSettings(),
+                )
+              : (locResult.isServiceDisabled
+                  ? SnackBarAction(
+                      label: "开启GPS",
+                      onPressed: () => LocationService.openLocationSettings(),
+                    )
+                  : null),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -114,6 +131,19 @@ class _StationScreenState extends State<StationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(I18n.t(context, "station_title"), style: const TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: _locatingGps
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location),
+            tooltip: I18n.t(context, "station_get_current_location"),
+            onPressed: _locatingGps ? null : _locateCurrentPosition,
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -163,6 +193,64 @@ class _StationScreenState extends State<StationScreen> {
             for (var station in _searchResults) _buildStationTile(context, station, config),
             const Divider(height: 24),
           ],
+
+          // Permission warning card if denied forever
+          if (_lastLocationResult?.isPermissionDeniedForever == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Card(
+                color: Colors.amber.shade50,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          I18n.t(context, "location_permission_denied_forever"),
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => LocationService.openAppSettings(),
+                        child: const Text("去设置开启"),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Location service disabled warning card
+          if (_lastLocationResult?.isServiceDisabled == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Card(
+                color: Colors.amber.shade50,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_off, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          I18n.t(context, "location_services_disabled"),
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => LocationService.openLocationSettings(),
+                        child: const Text("开启定位"),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // GPS Location Card
           Padding(
@@ -256,7 +344,7 @@ class _StationScreenState extends State<StationScreen> {
       title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         station.desc ??
-            (station.distance != null ? "${station.distance} m" : "ID: ${station.id}"),
+            (station.distance != null ? "${station.distance}" : "ID: ${station.id}"),
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       ),
       trailing: Row(
