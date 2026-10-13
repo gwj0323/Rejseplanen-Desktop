@@ -383,7 +383,7 @@ class _TripScreenState extends State<TripScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      "${_trips.length} 条路线",
+                      I18n.t(context, "trip_results_count", {"count": "${_trips.length}"}),
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],

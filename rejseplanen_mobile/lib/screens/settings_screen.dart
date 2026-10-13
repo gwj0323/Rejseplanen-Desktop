@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(width: 4),
                       Text(
                         config.hasApiKey
-                            ? "${I18n.t(context, "settings_api_status_saved")} (${config.apiKey.length} 位)"
+                            ? "${I18n.t(context, "settings_api_status_saved")} (${I18n.t(context, "settings_key_chars", {"count": "${config.apiKey.length}"})})"
                             : I18n.t(context, "settings_api_status_none"),
                         style: TextStyle(
                           fontSize: 11.5,

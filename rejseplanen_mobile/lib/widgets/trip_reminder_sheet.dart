@@ -274,7 +274,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            "预览：预计将在发车前 $_depMinutes 分钟提醒前往站台乘车",
+                            I18n.t(context, "reminder_dep_preview", {"mins": "$_depMinutes"}),
                             style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
                           ),
                         ),
@@ -292,7 +292,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                 context: context,
                 icon: Icons.transfer_within_a_station,
                 iconColor: Colors.deepOrange,
-                title: "${I18n.t(context, "reminder_transfer_title")} (${widget.trip.changes} 次换乘)",
+                title: "${I18n.t(context, "reminder_transfer_title")} (${I18n.t(context, "reminder_transfer_count", {"count": "${widget.trip.changes}"})})",
                 subtitle: I18n.t(context, "reminder_transfer_desc"),
                 enabled: _enableTransfer,
                 onToggle: (v) => setState(() => _enableTransfer = v),
@@ -308,7 +308,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          "到达中转站前 5 分钟提醒换乘并提示下一程车次及站台",
+                          I18n.t(context, "reminder_transfer_preview"),
                           style: TextStyle(fontSize: 11, color: Colors.deepOrange.shade900),
                         ),
                       ),
@@ -357,7 +357,10 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            "到达终点站 ${widget.destination.name} 前 $_arrMinutes 分钟提醒收拾行李下车",
+                            I18n.t(context, "reminder_arr_preview", {
+                              "station": widget.destination.name,
+                              "mins": "$_arrMinutes",
+                            }),
                             style: TextStyle(fontSize: 11, color: Colors.teal.shade900),
                           ),
                         ),
@@ -565,6 +568,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
       enableTransfer: _enableTransfer,
       enableArrival: _enableArr,
       arrAdvanceMinutes: _arrMinutes,
+      lang: config.effectiveLanguage,
     );
 
     config.setTripReminderActive(widget.trip.idx, true);
