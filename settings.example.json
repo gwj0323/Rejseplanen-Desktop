@@ -1,0 +1,53 @@
+{
+  "api_key": "",
+  "base_url": "https://www.rejseplanen.dk/api",
+  "mock_fallback": true,
+  "language": "zh_CN",
+  "theme": "Auto",
+  "auto_refresh_interval": 30,
+  "favorite_stations": [
+    {
+      "id": "8600626",
+      "name": "København H",
+      "type": "ST"
+    },
+    {
+      "id": "8600646",
+      "name": "Nørreport St.",
+      "type": "ST"
+    },
+    {
+      "id": "8600858",
+      "name": "CPH Lufthavn",
+      "type": "ST"
+    },
+    {
+      "id": "8600053",
+      "name": "Aarhus H",
+      "type": "ST"
+    }
+  ],
+  "favorite_trips": [
+    {
+      "origin": {
+        "id": "8600626",
+        "name": "København H"
+      },
+      "dest": {
+        "id": "8600646",
+        "name": "Nørreport St."
+      }
+    },
+    {
+      "origin": {
+        "id": "8600626",
+        "name": "København H"
+      },
+      "dest": {
+        "id": "8600858",
+        "name": "CPH Lufthavn"
+      }
+    }
+  ],
+  "recent_searches": []
+}
