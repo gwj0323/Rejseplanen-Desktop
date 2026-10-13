@@ -37,35 +37,10 @@ jobs:
         run: |
           rm -rf android
           flutter create . --platforms=android --org com.rejseplanen
-          python3 -c "
-          import os, re
-
-          # 1. Permissions
-          p = 'android/app/src/main/AndroidManifest.xml'
-          if os.path.exists(p):
-              with open(p, 'r') as f: c = f.read()
-              perms = '    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>\n'
-              c = c.replace('<application', perms + '    <application')
-              with open(p, 'w') as f: f.write(c)
-
-          # 2. Kotlin version
-          for fn in ['android/build.gradle', 'android/settings.gradle']:
-              if os.path.exists(fn):
-                  with open(fn, 'r') as f: c = f.read()
-                  c = re.sub(r\"ext\.kotlin_version\s*=\s*['\"][^'\"]+['\"]\", \"ext.kotlin_version = '1.9.22'\", c)
-                  c = re.sub(r\"id\s*['\\\"]org\.jetbrains\.kotlin\.android['\\\"]\s*version\s*['\\\"][^'\\\"]+['\\\]\", \"id 'org.jetbrains.kotlin.android' version '1.9.22'\", c)
-                  with open(fn, 'w') as f: f.write(c)
-
-          # 3. compileSdkVersion 34
-          app_gradle = 'android/app/build.gradle'
-          if os.path.exists(app_gradle):
-              with open(app_gradle, 'r') as f: c = f.read()
-              c = re.sub(r'compileSdk(?:Version)?\s*=?\s*\d+', 'compileSdkVersion 34', c)
-              c = re.sub(r'targetSdk(?:Version)?\s*=?\s*\d+', 'targetSdkVersion 34', c)
-              with open(app_gradle, 'w') as f: f.write(c)
-          "
+          python3 ../.github/scripts/patch_android.py
 
       - name: Install dependencies
+
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
