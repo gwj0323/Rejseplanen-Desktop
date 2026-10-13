@@ -35,11 +35,12 @@ python app.py
 - 网络: requests (Python) / http (Dart)
 - 数据接口: Rejseplanen REST API 2.0
 
-## 移动端 App (Android)
+## 移动端 App (Android & iOS)
 
-项目已完整提供 Android原生跨平台移动客户端，位于目录 [`rejseplanen_mobile/`](file:///c:/Users/gewen/Documents/antigravity/rejseplaned/rejseplanen_mobile)：
+项目已完整提供原生跨平台移动客户端，位于目录 `rejseplanen_mobile/`：
 - 包含完整的行程规划、实时大屏、站点 GPS 探测、收藏夹、多语言及暗黑模式。
-- 配备 GitHub Actions 自动化打包脚本（`.github/workflows/build-apk.yml`），推送到 GitHub 即可自动一键编译生成 APK 安装包。
+- **Android 自动化打包**：配备 GitHub Actions 脚本（`.github/workflows/build-apk.yml`），自动编译生成 APK 安装包。
+- **iOS 自动化打包**：配备 GitHub Actions macOS 脚本（`.github/workflows/build-ios.yml`），自动编译生成 iOS `.ipa` 应用程序包。
 
 ## 作者
 

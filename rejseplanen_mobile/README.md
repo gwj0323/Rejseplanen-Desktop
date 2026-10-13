@@ -17,17 +17,27 @@
 
 ## 安装包下载
 
-项目配置了 GitHub Actions 自动化编译，无需本地搭建 Android 开发环境即可获取安装包：
+项目配置了 GitHub Actions 自动化编译，无需本地搭建移动端开发环境即可一键获取安装包：
 
+### 1. Android (APK)
 1. 打开本仓库的 [Actions](https://github.com/gwj0323/Rejseplanen-Desktop/actions) 页面。
 2. 点击最新一次成功的 **Build Android APK** 工作流。
-3. 在页面底部的 **Artifacts** 区域下载 `rejseplanen-release-apk`，解压后即可得到 `app-release.apk`。
+3. 在页面底部的 **Artifacts** 区域下载 `rejseplanen-release-apk`，解压后即可在安卓手机上安装 `app-release.apk`。
+
+### 2. iOS (IPA)
+1. 打开本仓库的 [Actions](https://github.com/gwj0323/Rejseplanen-Desktop/actions) 页面。
+2. 点击最新一次成功的 **Build iOS IPA** 工作流。
+3. 在页面底部的 **Artifacts** 区域下载 `rejseplanen-release-ipa`，解压后获得 `rejseplanen-ios-release.ipa`。
+4. **安装方式（侧载 / 自签）**：
+   - **Sideloadly** (推荐，Windows/Mac 均支持)：连接 iPhone，拖入 IPA 输入任意免费 Apple ID 即可自签安装。
+   - **AltStore**：通过个人电脑端 AltServer 进行自签无线安装。
+   - **TrollStore** (适用于支持的 iOS 版本)：直接导入 IPA 永久免证书安装。
 
 ## 本地开发与编译
 
 ### 前置要求
 - [Flutter SDK 3.22+](https://flutter.dev/docs/get-started/install)
-- Android SDK (API 34)
+- Android SDK (API 34) 或 macOS (Xcode 15+ 用于 iOS)
 
 ### 运行步骤
 ```bash

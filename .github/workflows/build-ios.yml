@@ -1,0 +1,57 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter iOS App
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+
+      - name: Initialize iOS Platform
+        working-directory: rejseplanen_mobile
+        run: |
+          rm -rf ios
+          flutter create . --platforms=ios --org com.rejseplanen
+          python3 ../.github/scripts/patch_ios.py
+
+      - name: Install dependencies
+        working-directory: rejseplanen_mobile
+        run: flutter pub get
+
+      - name: Build iOS Application (Release, no-codesign)
+        working-directory: rejseplanen_mobile
+        run: |
+          flutter build ios --release --no-codesign --verbose
+
+      - name: Package into IPA
+        working-directory: rejseplanen_mobile
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r -q rejseplanen-ios-release.ipa Payload
+          ls -lh rejseplanen-ios-release.ipa
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rejseplanen-release-ipa
+          path: rejseplanen_mobile/rejseplanen-ios-release.ipa
