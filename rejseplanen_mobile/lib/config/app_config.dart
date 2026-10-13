@@ -77,6 +77,17 @@ class AppConfig extends ChangeNotifier {
   List<Map<String, Station>> get favoriteTrips => _favoriteTrips;
   List<String> get recentSearches => _recentSearches;
 
+  final Set<String> _activeTripReminderIds = {};
+  bool isTripReminderActive(String tripIdx) => _activeTripReminderIds.contains(tripIdx);
+  void setTripReminderActive(String tripIdx, bool active) {
+    if (active) {
+      _activeTripReminderIds.add(tripIdx);
+    } else {
+      _activeTripReminderIds.remove(tripIdx);
+    }
+    notifyListeners();
+  }
+
   bool get hasApiKey => _apiKey.trim().isNotEmpty;
 
   AppConfig() {

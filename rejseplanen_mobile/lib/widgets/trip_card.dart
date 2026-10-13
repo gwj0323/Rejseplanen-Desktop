@@ -5,6 +5,7 @@ import '../models/station.dart';
 import '../config/app_config.dart';
 import '../i18n/translations.dart';
 import 'transit_badge.dart';
+import 'trip_reminder_sheet.dart';
 
 class TripCard extends StatefulWidget {
   final TripProposal trip;
@@ -88,6 +89,28 @@ class _TripCardState extends State<TripCard> {
                         : "${trip.changes} ${I18n.t(context, "trip_changes")}",
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
+                  if (config.isTripReminderActive(trip.idx)) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        border: Border.all(color: Colors.green.shade300),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.notifications_active, size: 11, color: Colors.green.shade700),
+                          const SizedBox(width: 3),
+                          Text(
+                            I18n.t(context, "trip_reminder_active"),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
@@ -136,8 +159,39 @@ class _TripCardState extends State<TripCard> {
                 for (var leg in trip.legs) _buildLegDetail(context, leg),
                 const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: config.isTripReminderActive(trip.idx)
+                            ? Colors.green.withOpacity(0.15)
+                            : theme.colorScheme.primaryContainer.withOpacity(0.5),
+                        foregroundColor: config.isTripReminderActive(trip.idx)
+                            ? Colors.green.shade800
+                            : theme.colorScheme.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      icon: Icon(
+                        config.isTripReminderActive(trip.idx)
+                            ? Icons.notifications_active
+                            : Icons.notifications_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        config.isTripReminderActive(trip.idx)
+                            ? I18n.t(context, "trip_reminder_active")
+                            : I18n.t(context, "trip_reminder_btn"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      onPressed: () {
+                        TripReminderSheet.show(
+                          context,
+                          trip: widget.trip,
+                          origin: widget.origin,
+                          destination: widget.destination,
+                        );
+                      },
+                    ),
                     TextButton.icon(
                       icon: const Icon(Icons.star_border, size: 18),
                       label: Text(I18n.t(context, "trip_save_fav")),
