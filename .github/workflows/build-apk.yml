@@ -35,8 +35,20 @@ jobs:
       - name: Initialize Android Platform
         working-directory: rejseplanen_mobile
         run: |
-          rm -rf android
-          flutter create . --platforms=android --org com.rejseplanen
+          mkdir -p /tmp/res_backup
+          if [ -d "android/app/src/main/res" ]; then
+            cp -r android/app/src/main/res/* /tmp/res_backup/ 2>/dev/null || true
+          fi
+
+          if [ ! -f "android/gradlew" ]; then
+            flutter create . --platforms=android --org com.rejseplanen
+          fi
+
+          if [ -d "/tmp/res_backup" ] && [ "$(ls -A /tmp/res_backup 2>/dev/null)" ]; then
+            mkdir -p android/app/src/main/res
+            cp -rn /tmp/res_backup/* android/app/src/main/res/ 2>/dev/null || true
+          fi
+
           python3 ../.github/scripts/patch_android.py
 
       - name: Install dependencies

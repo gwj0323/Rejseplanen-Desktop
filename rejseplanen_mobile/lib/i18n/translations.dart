@@ -68,6 +68,13 @@ class I18n {
       "reminder_enabled_snack": "已成功开启行程提醒！",
       "reminder_cancelled_snack": "已取消此行程的所有提醒",
       "reminder_test_sent": "已发送测试通知，请查看手机顶部通知栏",
+      "reminder_perm_banner_title": "未开启通知权限",
+      "reminder_perm_banner_desc": "请开启通知权限，以便接收行程出发、换乘与到站提醒",
+      "reminder_perm_enable_btn": "去开启",
+      "reminder_perm_dialog_title": "需要通知权限",
+      "reminder_perm_dialog_body": "手机系统尚未允许 Rejseplanen 发送通知。请在系统设置中开启「允许通知」，否则将无法收到行程提醒。",
+      "reminder_perm_open_settings": "打开系统设置",
+      "common_cancel": "取消",
 
       // Board
       "board_title": "实时大屏",
@@ -252,6 +259,13 @@ class I18n {
       "reminder_enabled_snack": "Trip reminders activated successfully!",
       "reminder_cancelled_snack": "Reminders cancelled for this trip",
       "reminder_test_sent": "Test notification sent to status bar",
+      "reminder_perm_banner_title": "Notification Permission Needed",
+      "reminder_perm_banner_desc": "Enable notification permission to receive departure and arrival alerts",
+      "reminder_perm_enable_btn": "Enable",
+      "reminder_perm_dialog_title": "Notification Permission Required",
+      "reminder_perm_dialog_body": "Notifications are disabled for Rejseplanen. Please enable notifications in system settings to receive timely trip alerts.",
+      "reminder_perm_open_settings": "Open Settings",
+      "common_cancel": "Cancel",
 
       // Board
       "board_title": "Live Departures",
@@ -436,6 +450,13 @@ class I18n {
       "reminder_enabled_snack": "Rejsepåmindelser er aktiveret!",
       "reminder_cancelled_snack": "Påmindelser for denne rejse er annulleret",
       "reminder_test_sent": "Testbesked sendt til statuslinjen",
+      "reminder_perm_banner_title": "Notifikationer er slået fra",
+      "reminder_perm_banner_desc": "Slå notifikationer til for at modtage afgangs- og ankomstadvarsler",
+      "reminder_perm_enable_btn": "Aktivér",
+      "reminder_perm_dialog_title": "Notifikationsadgang påkrævet",
+      "reminder_perm_dialog_body": "Notifikationer er deaktiveret for Rejseplanen. Tillad venligst notifikationer i systemindstillinger.",
+      "reminder_perm_open_settings": "Åbn indstillinger",
+      "common_cancel": "Annuller",
 
       // Board
       "board_title": "Afgangstavle",

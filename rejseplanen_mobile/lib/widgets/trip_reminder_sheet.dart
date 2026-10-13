@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/trip.dart';
 import '../models/station.dart';
 import '../config/app_config.dart';
@@ -39,7 +40,7 @@ class TripReminderSheet extends StatefulWidget {
   State<TripReminderSheet> createState() => _TripReminderSheetState();
 }
 
-class _TripReminderSheetState extends State<TripReminderSheet> {
+class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindingObserver {
   bool _enableDep = true;
   int _depMinutes = 10;
 
@@ -49,6 +50,44 @@ class _TripReminderSheetState extends State<TripReminderSheet> {
   int _arrMinutes = 5;
 
   bool _testing = false;
+  bool _hasPermission = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPermission();
+    // Prompt for notification permission as soon as user opens reminder sheet
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final enabled = await NotificationService().areNotificationsEnabled();
+      if (!enabled) {
+        await NotificationService().requestPermission();
+        _checkPermission();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermission();
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    final enabled = await NotificationService().areNotificationsEnabled();
+    if (mounted) {
+      setState(() {
+        _hasPermission = enabled;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +175,66 @@ class _TripReminderSheetState extends State<TripReminderSheet> {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Notification Permission Warning Banner (if permission is not granted)
+            if (!_hasPermission) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.amber.shade900, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            I18n.t(context, "reminder_perm_banner_title"),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            I18n.t(context, "reminder_perm_banner_desc"),
+                            style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: Colors.amber.shade200,
+                        foregroundColor: Colors.amber.shade900,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () async {
+                        final granted = await NotificationService().requestPermission();
+                        if (!granted) {
+                          await Geolocator.openAppSettings();
+                        }
+                        _checkPermission();
+                      },
+                      child: Text(
+                        I18n.t(context, "reminder_perm_enable_btn"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // Card 1: Departure Reminder (出发提醒)
             _buildReminderCard(
@@ -374,9 +473,55 @@ class _TripReminderSheetState extends State<TripReminderSheet> {
     );
   }
 
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.notifications_off, color: Colors.amber),
+            const SizedBox(width: 8),
+            Expanded(child: Text(I18n.t(ctx, "reminder_perm_dialog_title"))),
+          ],
+        ),
+        content: Text(I18n.t(ctx, "reminder_perm_dialog_body")),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(I18n.t(ctx, "common_cancel")),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.settings, size: 16),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await Geolocator.openAppSettings();
+            },
+            label: Text(I18n.t(ctx, "reminder_perm_open_settings")),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleTestNotification() async {
     setState(() => _testing = true);
     final notificationService = NotificationService();
+
+    // 1. Verify or prompt permission first
+    bool granted = await notificationService.areNotificationsEnabled();
+    if (!granted) {
+      granted = await notificationService.requestPermission();
+    }
+    await _checkPermission();
+
+    if (!granted) {
+      if (mounted) {
+        setState(() => _testing = false);
+        _showPermissionDialog();
+      }
+      return;
+    }
+
     await notificationService.showInstantNotification(
       id: 999,
       title: I18n.t(context, "reminder_test_title"),
@@ -396,6 +541,21 @@ class _TripReminderSheetState extends State<TripReminderSheet> {
 
   Future<void> _handleConfirmReminders(AppConfig config) async {
     final notificationService = NotificationService();
+
+    // Verify or prompt permission first
+    bool granted = await notificationService.areNotificationsEnabled();
+    if (!granted) {
+      granted = await notificationService.requestPermission();
+    }
+    await _checkPermission();
+
+    if (!granted) {
+      if (mounted) {
+        _showPermissionDialog();
+      }
+      return;
+    }
+
     await notificationService.scheduleTripReminders(
       trip: widget.trip,
       origin: widget.origin,

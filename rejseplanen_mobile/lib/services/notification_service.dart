@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/trip.dart';
@@ -32,8 +33,8 @@ class NotificationService {
       debugPrint('[NotificationService] Timezone init error: $e');
     }
 
-    // 2. Android initialization settings
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@drawable/ic_stat_train');
+    // 2. Android initialization settings - use standard @mipmap/ic_launcher
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -76,19 +77,48 @@ class NotificationService {
     }
   }
 
-  /// Request runtime notification permission on Android 13+
-  Future<bool> requestPermission() async {
+  /// Check whether notifications are currently enabled in the system
+  Future<bool> areNotificationsEnabled() async {
+    await init();
     try {
+      final status = await Permission.notification.status;
+      if (status.isGranted) return true;
+
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
-        final granted = await androidPlugin.requestNotificationsPermission();
-        return granted ?? false;
+        return (await androidPlugin.areNotificationsEnabled()) ?? false;
       }
-      return true;
+      return status.isGranted;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Request runtime notification permission on Android 13+
+  Future<bool> requestPermission() async {
+    await init();
+    try {
+      // 1. Request via permission_handler (pops up native Android OS dialog)
+      final status = await Permission.notification.request();
+      debugPrint('[NotificationService] Permission.notification.request() status: $status');
+      if (status.isGranted) return true;
+
+      // 2. Fallback to flutter_local_notifications plugin request
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        final bool? granted = await androidPlugin.requestNotificationsPermission();
+        debugPrint('[NotificationService] requestNotificationsPermission result: $granted');
+        if (granted == true) return true;
+        return (await androidPlugin.areNotificationsEnabled()) ?? false;
+      }
+      return status.isGranted;
     } catch (e) {
       debugPrint('[NotificationService] Request permission error: $e');
-      return false;
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      return (await androidPlugin?.areNotificationsEnabled()) ?? false;
     }
   }
 
@@ -109,7 +139,7 @@ class NotificationService {
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
-        icon: '@drawable/ic_stat_train',
+        icon: '@mipmap/ic_launcher',
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -262,7 +292,7 @@ class NotificationService {
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
-        icon: '@drawable/ic_stat_train',
+        icon: '@mipmap/ic_launcher',
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
