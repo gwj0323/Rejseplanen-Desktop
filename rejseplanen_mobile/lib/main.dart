@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'config/app_config.dart';
 import 'screens/main_navigation.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final config = AppConfig();
   await config.loadSettings();
+  await NotificationService().init();
   runApp(
     ChangeNotifierProvider.value(
       value: config,
