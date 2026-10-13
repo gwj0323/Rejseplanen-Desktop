@@ -18,7 +18,15 @@ def main():
     app.setApplicationName("Rejseplanen Desktop")
     app.setOrganizationName("Rejseplanen")
     
+    from PyQt6.QtGui import QIcon
+    from config import RESOURCE_DIR
+    icon_path = os.path.join(RESOURCE_DIR, "icon.png")
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
+    
     window = MainWindow()
+    if os.path.exists(icon_path):
+        window.setWindowIcon(QIcon(icon_path))
     window.show()
     
     sys.exit(app.exec())

@@ -1,9 +1,17 @@
 import json
 import os
+import sys
 from typing import Dict, Any, List
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
-EXAMPLE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.example.json")
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(sys.executable)
+    RESOURCE_DIR = getattr(sys, "_MEIPASS", BASE_DIR)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    RESOURCE_DIR = BASE_DIR
+
+CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
+EXAMPLE_FILE = os.path.join(RESOURCE_DIR, "settings.example.json")
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "api_key": "",
