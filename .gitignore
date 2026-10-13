@@ -54,4 +54,6 @@ settings.json
 .pub/
 rejseplanen_mobile/build/
 rejseplanen_mobile/.dart_tool/
-
+build_artifacts/
+*.ipa
+*.apk
