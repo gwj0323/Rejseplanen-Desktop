@@ -1,4 +1,4 @@
-# Rejseplanen Desktop
+# Rejseplanen第三方
 
 基于 PyQt6 和 QFluentWidgets 的丹麦公共交通桌面客户端，接入丹麦官方 Rejseplanen API。    Gemini based code
 
