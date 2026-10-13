@@ -100,6 +100,21 @@ class LocationService {
     }
   }
 
+  /// Whether coordinates are within Denmark bounding box (lat [54.3, 58.0], lon [7.5, 15.5])
+  static bool isInDenmark(double lat, double lon) {
+    return lat >= 54.3 && lat <= 58.0 && lon >= 7.5 && lon <= 15.5;
+  }
+
+  /// Approximate distance in km from coordinates to Copenhagen center (55.6761, 12.5683)
+  static double distanceToDenmarkKm(double lat, double lon) {
+    const p = 0.017453292519943295;
+    final a = 0.5 -
+        cos((55.6761 - lat) * p) / 2 +
+        cos(lat * p) * cos(55.6761 * p) * (1 - cos((12.5683 - lon) * p)) / 2;
+    final meters = 12742000 * asin(sqrt(max(0.0, a)));
+    return meters / 1000.0;
+  }
+
   static Future<void> openAppSettings() async {
     await Geolocator.openAppSettings();
   }
