@@ -14,7 +14,7 @@
         <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <uses-feature android:name="android.hardware.location.network" android:required="false"/>
     <application
-        android:label="RejseNu"
+        android:label="Spor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

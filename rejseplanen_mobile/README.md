@@ -1,4 +1,4 @@
-# RejseNu Mobile 🇩🇰
+# Spor Mobile 🇩🇰
 
 基于 Flutter 开发的丹麦全域公共交通跨平台客户端（Android & iOS），接入官方 [Rejseplanen REST API](https://labs.rejseplanen.dk/)。
 
@@ -27,12 +27,12 @@
 ### 1. Android (APK)
 1. 打开本仓库的 [Actions](https://github.com/gwj0323/Rejseplanen-Desktop/actions) 页面。
 2. 点击最新一次成功的 **Build Android APK** 工作流。
-3. 在页面底部的 **Artifacts** 区域下载 `rejsenu-release-apk`，解压后即可在安卓手机上安装 `app-release.apk`。
+3. 在页面底部的 **Artifacts** 区域下载 `spor-release-apk`，解压后即可在安卓手机上安装 `app-release.apk`。
 
 ### 2. iOS (IPA)
 1. 打开本仓库的 [Actions](https://github.com/gwj0323/Rejseplanen-Desktop/actions) 页面。
 2. 点击最新一次成功的 **Build iOS IPA** 工作流。
-3. 在页面底部的 **Artifacts** 区域下载 `rejsenu-release-ipa`，解压后获得 `rejsenu-ios-release.ipa`。
+3. 在页面底部的 **Artifacts** 区域下载 `spor-release-ipa`，解压后获得 `spor-ios-release.ipa`。
 4. **安装方式（侧载 / 自签）**：
    - **Sideloadly** (推荐，Windows/Mac 均支持)：连接 iPhone，拖入 IPA 输入任意免费 Apple ID 即可自签安装。
    - **AltStore**：通过个人电脑端 AltServer 进行自签无线安装。

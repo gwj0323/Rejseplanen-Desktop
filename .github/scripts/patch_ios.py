@@ -9,25 +9,25 @@ def patch():
             content = f.read()
 
         ios_entries = """\t<key>CFBundleDisplayName</key>
-\t<string>RejseNu</string>
+\t<string>Spor</string>
 \t<key>NSLocationWhenInUseUsageDescription</key>
-\t<string>RejseNu bruger din placering til at finde stoppesteder og stationer i nærheden.</string>
+\t<string>Spor bruger din placering til at finde stoppesteder og stationer i nærheden.</string>
 \t<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-\t<string>RejseNu bruger din placering til at finde stoppesteder og levere rejseopdateringer.</string>
+\t<string>Spor bruger din placering til at finde stoppesteder og levere rejseopdateringer.</string>
 \t<key>NSCalendarsUsageDescription</key>
-\t<string>RejseNu bruger din kalender til at tilføje rejser og påmindelser.</string>
+\t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
 \t<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
-\t<string>RejseNu bruger din kalender til at tilføje rejser og påmindelser.</string>
+\t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
 """
         if "NSLocationWhenInUseUsageDescription" not in content:
             # Insert right before </dict></plist>
             content = content.replace("</dict>\n</plist>", ios_entries + "</dict>\n</plist>")
             if "</dict>\n</plist>" not in content:
                 content = content.replace("</dict></plist>", ios_entries + "</dict></plist>")
-            content = re.sub(r'<key>CFBundleName</key>\s*<string>[^<]*</string>', '<key>CFBundleName</key>\n\t<string>RejseNu</string>', content)
+            content = re.sub(r'<key>CFBundleName</key>\s*<string>[^<]*</string>', '<key>CFBundleName</key>\n\t<string>Spor</string>', content)
             with open(info_plist_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            print("Patched ios/Runner/Info.plist with location, calendar permissions and display name RejseNu")
+            print("Patched ios/Runner/Info.plist with location, calendar permissions and display name Spor")
 
     # 2. Patch Podfile to enforce iOS deployment target >= 13.0
     podfile_path = "ios/Podfile"

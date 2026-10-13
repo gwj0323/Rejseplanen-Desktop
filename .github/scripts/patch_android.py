@@ -35,10 +35,10 @@ def patch():
             content = content.replace("<application", perms + "    <application")
         if "ScheduledNotificationReceiver" not in content:
             content = content.replace("<activity", receivers + "        <activity")
-        content = re.sub(r'android:label="[^"]*"', 'android:label="RejseNu"', content)
+        content = re.sub(r'android:label="[^"]*"', 'android:label="Spor"', content)
         with open(manifest_path, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched AndroidManifest.xml with notification permissions, receivers and app label RejseNu")
+        print("Patched AndroidManifest.xml with notification permissions, receivers and app label Spor")
 
     # 2. Upgrade Kotlin version to 1.9.22 in build.gradle and settings.gradle
     for fn in ["android/build.gradle", "android/settings.gradle"]:

@@ -21,8 +21,9 @@ class JourneyDetailSheet extends StatefulWidget {
     BuildContext context, {
     required Departure departure,
     String? currentStation,
-  }) {
-    return showModalBottomSheet(
+  }) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -31,6 +32,7 @@ class JourneyDetailSheet extends StatefulWidget {
         currentStation: currentStation,
       ),
     );
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   @override
@@ -148,7 +150,10 @@ class _JourneyDetailSheetState extends State<JourneyDetailSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    Navigator.pop(context);
+                  },
                 ),
               ],
             ),

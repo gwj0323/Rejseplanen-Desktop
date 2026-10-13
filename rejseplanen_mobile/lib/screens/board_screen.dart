@@ -150,6 +150,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     final currentList = isArrival ? _arrivals : _departures;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(I18n.t(context, "board_title"), style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
