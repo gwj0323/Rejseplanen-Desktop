@@ -164,10 +164,8 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
-        category: AndroidNotificationCategory.alarm,
+        category: AndroidNotificationCategory.reminder,
         visibility: NotificationVisibility.public,
-        fullScreenIntent: true,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -440,10 +438,8 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
-        category: AndroidNotificationCategory.alarm,
+        category: AndroidNotificationCategory.reminder,
         visibility: NotificationVisibility.public,
-        fullScreenIntent: true,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);

@@ -19,8 +19,8 @@ Your privacy is of utmost importance. Spor is designed with a privacy-first appr
   When you explicitly tap the "Locate nearest station" button, Spor queries your device's GPS coordinates to find stations and stops closest to you. Location coordinates are transmitted directly to the transit API over HTTPS solely to retrieve nearby stations. **Your location is never stored on any remote server, tracked in the background, or shared with third parties.**
 - **Notifications & Alarms (`POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`)**:
   Used strictly on-device to notify you when you explicitly schedule a trip departure reminder, transfer alert, or arrival notification. These alarms are managed locally on your device via the Android alarm manager.
-- **Calendar Access (`READ_CALENDAR`, `WRITE_CALENDAR`)**:
-  Used strictly when you tap "Export to Calendar" to insert your selected itinerary and travel timetable into your personal device calendar. We do not read, transmit, or analyze your other calendar entries.
+- **Calendar Integration**:
+  Used strictly when you tap "Export to Calendar" to insert your selected itinerary and travel timetable into your personal device calendar via the system calendar app. We do not access, read, transmit, or analyze your other calendar entries.
 
 ## 3. Third-Party Services & Analytics
 Spor does not embed third-party advertising SDKs, behavioral analytics trackers, or commercial profiling libraries. Public transit timetables and real-time departure boards are retrieved via HTTPS directly from open transit data endpoints.

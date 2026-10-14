@@ -8,6 +8,10 @@ import '../i18n/translations.dart';
 class CalendarService {
   /// Checks and requests calendar permissions from the operating system
   static Future<bool> requestCalendarPermission() async {
+    // Android uses platform Intent (ACTION_INSERT) via add_2_calendar, requiring no runtime permissions
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return true;
+    }
     try {
       final fullStatus = await Permission.calendarFullAccess.status;
       if (fullStatus.isGranted) return true;
@@ -33,6 +37,9 @@ class CalendarService {
 
   /// Checks if calendar permissions have been permanently denied by the user
   static Future<bool> isPermanentlyDenied() async {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return false;
+    }
     try {
       final full = await Permission.calendarFullAccess.status;
       final write = await Permission.calendarWriteOnly.status;
