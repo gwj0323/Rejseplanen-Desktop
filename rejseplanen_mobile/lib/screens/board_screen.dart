@@ -22,13 +22,14 @@ class BoardScreen extends StatefulWidget {
 
 class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  Station _currentStation = Station(id: "8600626", name: "København H");
+  Station _currentStation = Station(id: "8600626", name: "København H", lat: 55.673063, lon: 12.565562);
 
   List<Departure> _departures = [];
   List<Departure> _arrivals = [];
   bool _isLoading = false;
   bool _isMock = true;
   String? _errorMessage;
+  String _selectedMode = "ALL";
 
   bool _autoRefresh = false;
   Timer? _refreshTimer;
@@ -119,8 +120,17 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     final client = RejseplanenApiClient(config);
     final isArrival = _tabController.index == 1;
 
+    final bool useTrain = _selectedMode == "ALL" || _selectedMode == "TRAIN";
+    final bool useMetro = _selectedMode == "ALL" || _selectedMode == "METRO";
+    final bool useBus = _selectedMode == "ALL" || _selectedMode == "BUS";
+
     if (isArrival) {
-      final res = await client.getArrivalBoard(_currentStation.id);
+      final res = await client.getArrivalBoard(
+        _currentStation.id,
+        useTrain: useTrain,
+        useMetro: useMetro,
+        useBus: useBus,
+      );
       if (mounted) {
         setState(() {
           _arrivals = res.data;
@@ -130,7 +140,12 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
         });
       }
     } else {
-      final res = await client.getDepartureBoard(_currentStation.id);
+      final res = await client.getDepartureBoard(
+        _currentStation.id,
+        useTrain: useTrain,
+        useMetro: useMetro,
+        useBus: useBus,
+      );
       if (mounted) {
         setState(() {
           _departures = res.data;
@@ -253,6 +268,37 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                     }
                   },
                 ),
+                if (_currentStation.lat != 0.0 && _currentStation.lon != 0.0) ...[
+                  const SizedBox(width: 6),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.map_outlined, size: 20),
+                    tooltip: I18n.t(context, "station_open_in_maps"),
+                    onPressed: () {
+                      LocationService.openInMaps(
+                        _currentStation.lat,
+                        _currentStation.lon,
+                        name: _currentStation.name,
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Transit Mode Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                _buildModeChip(context, "ALL", I18n.t(context, "board_filter_all"), Icons.apps),
+                const SizedBox(width: 8),
+                _buildModeChip(context, "TRAIN", I18n.t(context, "board_filter_train"), Icons.train),
+                const SizedBox(width: 8),
+                _buildModeChip(context, "METRO", I18n.t(context, "board_filter_metro"), Icons.subway),
+                const SizedBox(width: 8),
+                _buildModeChip(context, "BUS", I18n.t(context, "board_filter_bus"), Icons.directions_bus),
               ],
             ),
           ),
@@ -400,6 +446,38 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
           ]
         ],
       ),
+    );
+  }
+
+  Widget _buildModeChip(BuildContext context, String mode, String label, IconData icon) {
+    final theme = Theme.of(context);
+    final isSelected = _selectedMode == mode;
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      visualDensity: VisualDensity.compact,
+      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+      selectedColor: theme.colorScheme.primary,
+      onSelected: (_) {
+        if (_selectedMode != mode) {
+          setState(() => _selectedMode = mode);
+          _fetchBoard();
+        }
+      },
     );
   }
 }

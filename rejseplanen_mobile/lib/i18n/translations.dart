@@ -150,6 +150,11 @@ class I18n {
       "status_cancelled": "停运",
       "board_add_fav": "收藏车站",
       "board_no_departures": "当前暂无车次记录",
+      "board_filter_all": "全部",
+      "board_filter_train": "火车 / S-tog",
+      "board_filter_metro": "地铁",
+      "board_filter_bus": "公交",
+      "station_open_in_maps": "在地图中打开",
 
       // Station Explorer
       "station_title": "站点查询",
@@ -404,6 +409,11 @@ class I18n {
       "status_cancelled": "Cancelled",
       "board_add_fav": "Save station",
       "board_no_departures": "No departures found.",
+      "board_filter_all": "All",
+      "board_filter_train": "Train / S-tog",
+      "board_filter_metro": "Metro",
+      "board_filter_bus": "Bus",
+      "station_open_in_maps": "Open in Maps",
 
       // Station Explorer
       "station_title": "Stations",
@@ -658,6 +668,11 @@ class I18n {
       "status_cancelled": "Aflyst",
       "board_add_fav": "Gem station",
       "board_no_departures": "Ingen afgange fundet.",
+      "board_filter_all": "Alle",
+      "board_filter_train": "Tog / S-tog",
+      "board_filter_metro": "Metro",
+      "board_filter_bus": "Bus",
+      "station_open_in_maps": "Åbn i kort",
 
       // Station Explorer
       "station_title": "Stationer",

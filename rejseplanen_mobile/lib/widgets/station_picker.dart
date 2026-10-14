@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
@@ -26,6 +27,7 @@ class StationPickerModal extends StatefulWidget {
 
 class _StationPickerModalState extends State<StationPickerModal> {
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _debounceTimer;
   List<Station> _suggestedResults = [];
   List<Station> _searchResults = [];
   bool _loading = false;
@@ -40,6 +42,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     FocusManager.instance.primaryFocus?.unfocus();
     _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
@@ -58,23 +61,29 @@ class _StationPickerModalState extends State<StationPickerModal> {
   }
 
   void _onSearchChanged() {
+    _debounceTimer?.cancel();
     final q = _searchCtrl.text.trim();
     if (q.isEmpty) {
-      setState(() {
-        _searchResults = [];
-        _loading = false;
-      });
-      return;
-    }
-    setState(() => _loading = true);
-    final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
-    client.searchLocations(q).then((res) {
       if (mounted) {
         setState(() {
-          _searchResults = res.data;
+          _searchResults = [];
           _loading = false;
         });
       }
+      return;
+    }
+    setState(() => _loading = true);
+    _debounceTimer = Timer(const Duration(milliseconds: 280), () {
+      if (!mounted) return;
+      final client = RejseplanenApiClient(Provider.of<AppConfig>(context, listen: false));
+      client.searchLocations(q).then((res) {
+        if (mounted && _searchCtrl.text.trim() == q) {
+          setState(() {
+            _searchResults = res.data;
+            _loading = false;
+          });
+        }
+      });
     });
   }
 
@@ -103,6 +112,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
         }
       }
     } else {
+      if (!mounted) return;
       setState(() => _locatingGps = false);
       final errorKey = loc.errorKey ?? "location_error";
       ScaffoldMessenger.of(context).showSnackBar(
@@ -312,7 +322,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
               ),
               title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                s.desc ?? (s.distance != null ? "${s.distance} m" : I18n.t(context, "station_recent_searches")),
+                s.desc ?? (s.distance != null ? s.distance! : I18n.t(context, "station_recent_searches")),
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
               ),
               trailing: IconButton(
@@ -366,7 +376,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
               ),
               title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
+                s.desc ?? (s.distance != null ? s.distance! : "ID: ${s.id}"),
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
               ),
               onTap: () => _selectStation(config, s),
@@ -453,7 +463,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
             ),
             title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(
-              s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
+              s.desc ?? (s.distance != null ? s.distance! : "ID: ${s.id}"),
               style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
             ),
             onTap: () => _selectStation(config, s),

@@ -19,6 +19,7 @@ class ApiResult<T> {
 
 class RejseplanenApiClient {
   final AppConfig config;
+  static final http.Client _client = http.Client();
 
   final Map<String, String> _stationIdCache = {
     "8600626": "A=1@O=København H@X=12565562@Y=55673063@U=86@L=8600626@p=1791796388@",
@@ -125,7 +126,7 @@ class RejseplanenApiClient {
         "accessId": key,
         "format": "json"
       });
-      final resp = await http.get(uri).timeout(const Duration(seconds: 6));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 6));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
         final rawItems = data["stopLocationOrCoordLocation"] as List? ?? [];
@@ -163,7 +164,7 @@ class RejseplanenApiClient {
     });
 
     try {
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
         return {
           "success": true,
@@ -196,7 +197,7 @@ class RejseplanenApiClient {
         "accessId": key,
         "format": "json"
       });
-      final resp = await http.get(uri).timeout(const Duration(seconds: 7));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 7));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
         List<Station> results = [];
@@ -301,7 +302,7 @@ class RejseplanenApiClient {
         "accessId": key,
         "format": "json"
       });
-      final resp = await http.get(uri).timeout(const Duration(seconds: 7));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 7));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
         List<Station> results = [];
@@ -394,7 +395,7 @@ class RejseplanenApiClient {
       }
 
       final uri = Uri.parse("${config.baseUrl}/departureBoard").replace(queryParameters: params);
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -472,6 +473,9 @@ class RejseplanenApiClient {
     String stationId, {
     String? dateStr,
     String? timeStr,
+    bool useBus = true,
+    bool useTrain = true,
+    bool useMetro = true,
   }) async {
     final key = config.apiKey.trim();
     if (key.isEmpty) {
@@ -487,6 +491,9 @@ class RejseplanenApiClient {
         "id": resolvedId,
         "accessId": key,
         "format": "json",
+        "useBus": useBus ? "1" : "0",
+        "useTrain": useTrain ? "1" : "0",
+        "useMetro": useMetro ? "1" : "0",
       };
       if (dateStr != null) {
         final d = _normalizeDateStr(dateStr);
@@ -497,7 +504,7 @@ class RejseplanenApiClient {
       }
 
       final uri = Uri.parse("${config.baseUrl}/arrivalBoard").replace(queryParameters: params);
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -604,7 +611,7 @@ class RejseplanenApiClient {
       }
 
       final uri = Uri.parse("${config.baseUrl}/trip").replace(queryParameters: params);
-      final resp = await http.get(uri).timeout(const Duration(seconds: 15));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 15));
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -765,10 +772,14 @@ class RejseplanenApiClient {
             cleanRef = cleanRef.substring(4);
           }
           final base = config.baseUrl.replaceAll(RegExp(r'/+$'), '');
-          uri = Uri.parse("$base/journeyDetail?ref=$cleanRef&accessId=${Uri.encodeQueryComponent(key)}&format=json");
+          uri = Uri.parse("$base/journeyDetail").replace(queryParameters: {
+            "ref": cleanRef,
+            "accessId": key,
+            "format": "json",
+          });
         }
 
-        final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+        final resp = await _client.get(uri).timeout(const Duration(seconds: 10));
         if (resp.statusCode == 200) {
           final data = jsonDecode(resp.body);
           if (data is Map<String, dynamic>) {

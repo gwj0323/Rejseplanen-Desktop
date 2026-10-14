@@ -145,7 +145,7 @@ class FavoritesScreen extends StatelessWidget {
                 leading: const Icon(Icons.history, color: Colors.blueGrey),
                 title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text(
-                  station.desc ?? (station.distance != null ? "${station.distance} m" : "ID: ${station.id}"),
+                  station.desc ?? (station.distance != null ? station.distance! : "ID: ${station.id}"),
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
                 trailing: IconButton(

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LocationResult {
   final double? lat;
@@ -121,5 +122,32 @@ class LocationService {
 
   static Future<void> openLocationSettings() async {
     await Geolocator.openLocationSettings();
+  }
+
+  /// Open station coordinates in device map app (Apple Maps on iOS, Google Maps / Geo Intent on Android)
+  static Future<bool> openInMaps(double lat, double lon, {String? name}) async {
+    if (lat == 0.0 && lon == 0.0) return false;
+    final encodedName = Uri.encodeComponent(name ?? 'Station');
+    final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lon');
+    final appleMapsUrl = Uri.parse('https://maps.apple.com/?q=$encodedName&ll=$lat,$lon');
+
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        if (await canLaunchUrl(appleMapsUrl)) {
+          return await launchUrl(appleMapsUrl, mode: LaunchMode.externalApplication);
+        }
+      } else {
+        final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon($encodedName)');
+        if (await canLaunchUrl(geoUri)) {
+          return await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+        }
+      }
+      if (await canLaunchUrl(googleMapsUrl)) {
+        return await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('[LocationService] openInMaps error: $e');
+    }
+    return false;
   }
 }

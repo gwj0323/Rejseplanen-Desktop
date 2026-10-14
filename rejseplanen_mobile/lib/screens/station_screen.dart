@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
@@ -17,6 +18,7 @@ class StationScreen extends StatefulWidget {
 
 class _StationScreenState extends State<StationScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _searchDebounce;
   List<Station> _searchResults = [];
   bool _searching = false;
 
@@ -38,26 +40,34 @@ class _StationScreenState extends State<StationScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
   void _onSearch(String query) {
-    if (query.trim().isEmpty) {
-      setState(() => _searchResults = []);
+    _searchDebounce?.cancel();
+    final q = query.trim();
+    if (q.isEmpty) {
+      if (mounted) {
+        setState(() => _searchResults = []);
+      }
       return;
     }
 
     setState(() => _searching = true);
-    final config = Provider.of<AppConfig>(context, listen: false);
-    final client = RejseplanenApiClient(config);
-    client.searchLocations(query).then((res) {
-      if (mounted) {
-        setState(() {
-          _searchResults = res.data;
-          _searching = false;
-        });
-      }
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
+      if (!mounted) return;
+      final config = Provider.of<AppConfig>(context, listen: false);
+      final client = RejseplanenApiClient(config);
+      client.searchLocations(q).then((res) {
+        if (mounted && _searchCtrl.text.trim() == q) {
+          setState(() {
+            _searchResults = res.data;
+            _searching = false;
+          });
+        }
+      });
     });
   }
 
@@ -532,6 +542,8 @@ class _StationScreenState extends State<StationScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => TripScreen(initialOrigin: station)),
                 );
+              } else if (val == 'map') {
+                LocationService.openInMaps(station.lat, station.lon, name: station.name);
               }
             },
             itemBuilder: (ctx) => [
@@ -555,6 +567,17 @@ class _StationScreenState extends State<StationScreen> {
                   ],
                 ),
               ),
+              if (station.lat != 0.0 && station.lon != 0.0)
+                PopupMenuItem(
+                  value: 'map',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.map_outlined, size: 18),
+                      const SizedBox(width: 8),
+                      Text(I18n.t(context, "station_open_in_maps")),
+                    ],
+                  ),
+                ),
             ],
           ),
         ],
