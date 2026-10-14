@@ -1,6 +1,8 @@
+import copy
 import json
 import os
 import sys
+import tempfile
 from typing import Dict, Any, List
 
 if getattr(sys, "frozen", False):
@@ -10,8 +12,23 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     RESOURCE_DIR = BASE_DIR
 
-CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
+LEGACY_CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
 EXAMPLE_FILE = os.path.join(RESOURCE_DIR, "settings.example.json")
+
+
+def get_config_dir() -> str:
+    """Per-user writable config directory (never the install dir, which is
+    read-only for frozen apps installed under /Applications or Program Files)."""
+    home = os.path.realpath(os.path.expanduser("~"))
+    if sys.platform == "win32":
+        base = os.path.join(home, "AppData", "Roaming")
+    else:
+        base = os.path.join(home, ".config")
+    return os.path.join(base, "Spor")
+
+
+CONFIG_DIR = get_config_dir()
+CONFIG_FILE = os.path.join(CONFIG_DIR, "settings.json")
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "api_key": "",
@@ -46,9 +63,31 @@ class AppConfig:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(AppConfig, cls).__new__(cls)
-            cls._instance._data = dict(DEFAULT_SETTINGS)
+            # Deep copy: a shallow copy would share the nested lists with
+            # DEFAULT_SETTINGS and mutate the module-level defaults.
+            cls._instance._data = copy.deepcopy(DEFAULT_SETTINGS)
+            cls._instance._migrate_legacy_config()
             cls._instance.load()
         return cls._instance
+
+    def _migrate_legacy_config(self):
+        """Move settings.json written by older versions next to the app/exe
+        (which also removes the API key from a possibly world-readable place)."""
+        legacy = os.path.realpath(LEGACY_CONFIG_FILE)
+        target = os.path.realpath(CONFIG_FILE)
+        base_real = os.path.realpath(BASE_DIR)
+        # Only ever touch a legacy file that sits directly inside the app dir.
+        if legacy == target or os.path.dirname(legacy) != base_real:
+            return
+        if not os.path.isfile(legacy):
+            return
+        try:
+            if os.path.exists(target):
+                return  # never overwrite the newer per-user config
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            os.replace(legacy, target)
+        except OSError as e:
+            print(f"[Config] Could not migrate legacy settings: {e}")
 
     def load(self):
         if os.path.exists(CONFIG_FILE):
@@ -70,9 +109,23 @@ class AppConfig:
             self.save()
 
     def save(self):
+        # Atomic write: settings (which contain the API key in plain text)
+        # land in a fresh 0600 temp file that then replaces the old config.
         try:
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump(self._data, f, indent=2, ensure_ascii=False)
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(prefix=".settings-", dir=CONFIG_DIR)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(self._data, f, indent=2, ensure_ascii=False)
+                if os.name == "posix":
+                    os.chmod(tmp_path, 0o600)
+                os.replace(tmp_path, CONFIG_FILE)
+            except Exception:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
         except Exception as e:
             print(f"[Config] Error saving settings: {e}")
 
