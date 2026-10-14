@@ -1,4 +1,4 @@
-package com.rejseplanen.mobile
+package com.spor.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

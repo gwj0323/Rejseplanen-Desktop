@@ -14,7 +14,6 @@ def patch():
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
@@ -48,7 +47,7 @@ def patch():
             </intent-filter>
         </receiver>
 """
-        if "android.permission.USE_EXACT_ALARM" not in content:
+        if "android.permission.SCHEDULE_EXACT_ALARM" not in content:
             content = content.replace("<application", perms + "    <application")
         # The API key is stored in SharedPreferences; keep it out of adb
         # backups and cloud backups of the app's private data.

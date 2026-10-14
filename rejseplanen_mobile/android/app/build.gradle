@@ -21,13 +21,13 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    namespace "com.rejseplanen.mobile"
+    namespace "com.spor.mobile"
     compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
 
     defaultConfig {
-        applicationId "com.rejseplanen.mobile"
+        applicationId "com.spor.mobile"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()

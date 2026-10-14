@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Spor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: #ffffff;
+            padding: 36px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+        h2 { color: #1e293b; margin-top: 24px; }
+        p, li { color: #475569; }
+        .disclaimer {
+            background: #f1f5f9;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        footer { margin-top: 40px; font-size: 13px; color: #94a3b8; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Policy for Spor</h1>
+        <p><strong>Effective Date:</strong> October 14, 2026</p>
+        <p><strong>Application:</strong> Spor (Package: <code>com.spor.mobile</code>)</p>
+
+        <div class="disclaimer">
+            <strong>Independent Disclaimer:</strong> Spor is an independent public transit companion application developed by gwj0323. Spor utilizes publicly available open APIs (Rejseplanen open data) and is not affiliated with, endorsed by, or operated by Rejseplanen A/S or DSB.
+        </div>
+
+        <h2>1. Overview</h2>
+        <p>Your privacy is of utmost importance to us. Spor is designed with a privacy-first approach: we do not require account registration, we do not track your identity, and we do not sell or monetize your personal data.</p>
+
+        <h2>2. Information We Access and How It Is Used</h2>
+        <ul>
+            <li><strong>Location Data (ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION):</strong>
+                <p>When you explicitly use the "Locate nearest station" feature, Spor accesses your device's GPS coordinates to find stations and stops closest to you. Location coordinates are transmitted directly to the transit API solely to return nearby transit stations. <strong>Your location is never stored on any remote server, tracked in the background, or shared with third parties.</strong></p>
+            </li>
+            <li><strong>Notifications & Alarms (POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM):</strong>
+                <p>Used strictly on-device to notify you when you explicitly schedule a trip departure reminder, transfer alert, or arrival notification. These alarms are managed locally on your device via the Android alarm manager.</p>
+            </li>
+            <li><strong>Calendar Access (READ_CALENDAR, WRITE_CALENDAR):</strong>
+                <p>Used strictly when you tap "Export to Calendar" to insert your selected itinerary and travel timetable into your personal device calendar. We do not read, transmit, or analyze your other calendar entries.</p>
+            </li>
+        </ul>
+
+        <h2>3. Third-Party Services and Analytics</h2>
+        <p>Spor does not embed third-party advertising SDKs, behavioral analytics trackers, or commercial profiling libraries. Public transit timetables and real-time departure boards are retrieved via HTTPS directly from open transit data endpoints.</p>
+
+        <h2>4. Data Retention and Security</h2>
+        <p>All user preferences (such as favorite stations, recent searches, and UI theme options) are saved exclusively on your local device storage using standard sandboxed SharedPreferences. Clearing app data or uninstalling the app permanently erases this data.</p>
+
+        <h2>5. Children's Privacy</h2>
+        <p>Spor does not knowingly collect personal information from children under the age of 13. The app provides public transit timetable information suitable for general audiences.</p>
+
+        <h2>6. Contact Us</h2>
+        <p>If you have any questions or concerns regarding this Privacy Policy, please open an issue on our official GitHub repository: <a href="https://github.com/gwj0323/Rejseplanen-Desktop/issues" target="_blank">github.com/gwj0323/Rejseplanen-Desktop</a>.</p>
+
+        <footer>
+            &copy; 2026 Spor. All rights reserved.
+        </footer>
+    </div>
+</body>
+</html>

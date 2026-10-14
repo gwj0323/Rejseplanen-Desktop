@@ -45,11 +45,10 @@ jobs:
         working-directory: rejseplanen_mobile
         run: |
           rm -rf android
-          flutter create . --platforms=android --org com.rejseplanen
+          flutter create . --platforms=android --org com.spor
           python3 ../.github/scripts/patch_android.py
 
       - name: Install dependencies
-
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
@@ -57,11 +56,22 @@ jobs:
         working-directory: rejseplanen_mobile
         run: flutter build apk --release --verbose
 
+      - name: Build Android App Bundle (Google Play AAB)
+        working-directory: rejseplanen_mobile
+        run: flutter build appbundle --release --verbose
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: spor-release-apk
           path: rejseplanen_mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 3
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spor-release-aab
+          path: rejseplanen_mobile/build/app/outputs/bundle/release/app-release.aab
           retention-days: 3
 
       - name: Prune older artifacts

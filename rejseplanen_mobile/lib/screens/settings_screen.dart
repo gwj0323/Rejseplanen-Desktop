@@ -692,6 +692,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       I18n.t(context, "settings_about_author"),
                       style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      I18n.t(context, "settings_about_disclaimer"),
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 11.5),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
