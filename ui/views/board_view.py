@@ -147,7 +147,7 @@ class BoardView(QWidget):
         
         # Auto refresh timer
         self.refresh_timer = QTimer(self)
-        self.refresh_timer.setInterval(30000)  # 30 seconds
+        self.refresh_timer.setInterval(self._refresh_interval_ms())  # from settings
         self.refresh_timer.timeout.connect(self.load_board)
         
         I18n.add_listener(self.update_i18n)
@@ -175,8 +175,18 @@ class BoardView(QWidget):
         self.table_widget.update_headers()
         self.load_board()
 
+    @staticmethod
+    def _refresh_interval_ms() -> int:
+        try:
+            seconds = int(config.get("auto_refresh_interval", 30))
+        except (TypeError, ValueError):
+            seconds = 30
+        return max(5, seconds) * 1000
+
     def _toggle_auto_refresh(self, checked: bool):
         if checked:
+            # Pick up setting changes each time the switch is enabled.
+            self.refresh_timer.setInterval(self._refresh_interval_ms())
             self.refresh_timer.start()
         else:
             self.refresh_timer.stop()
