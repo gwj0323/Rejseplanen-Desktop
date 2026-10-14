@@ -131,10 +131,7 @@ class NotificationService {
       if (androidPlugin != null) {
         await androidPlugin.requestNotificationsPermission();
         try {
-          final canExact = await androidPlugin.canScheduleExactAlarms() ?? false;
-          if (!canExact) {
-            await androidPlugin.requestExactAlarmsPermission();
-          }
+          await androidPlugin.requestExactAlarmsPermission();
         } catch (_) {}
 
         if (status.isGranted) return true;
