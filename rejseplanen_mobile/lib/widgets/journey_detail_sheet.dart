@@ -164,13 +164,37 @@ class _JourneyDetailSheetState extends State<JourneyDetailSheet> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : (_stops == null || _stops!.isEmpty)
+                : (_error != null && _error!.isNotEmpty && (_stops == null || _stops!.isEmpty))
                     ? Center(
-                        child: Text(
-                          I18n.t(context, "trip_no_stops"),
-                          style: TextStyle(color: Colors.grey.shade600),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.info_outline, size: 36, color: Colors.orange.shade400),
+                              const SizedBox(height: 10),
+                              Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                              ),
+                              const SizedBox(height: 14),
+                              OutlinedButton.icon(
+                                onPressed: _loadJourneyDetail,
+                                icon: const Icon(Icons.refresh, size: 16),
+                                label: Text(I18n.t(context, "board_refresh")),
+                              ),
+                            ],
+                          ),
                         ),
                       )
+                    : (_stops == null || _stops!.isEmpty)
+                        ? Center(
+                            child: Text(
+                              I18n.t(context, "trip_no_stops"),
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         itemCount: _stops!.length,

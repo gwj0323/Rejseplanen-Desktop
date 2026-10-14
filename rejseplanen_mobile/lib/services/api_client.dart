@@ -732,68 +732,111 @@ class RejseplanenApiClient {
     String? dateStr,
   }) async {
     final key = config.apiKey.trim();
+    String? fetchError;
+
     if (key.isNotEmpty && refUrlOrParam.isNotEmpty && !refUrlOrParam.startsWith("mock")) {
       try {
         Uri uri;
         if (refUrlOrParam.startsWith("http://") || refUrlOrParam.startsWith("https://")) {
-          var baseUri = Uri.parse(refUrlOrParam);
-          // Never send the accessId over cleartext HTTP even if the API
-          // hands out an http:// journeyDetail reference.
-          if (baseUri.scheme == "http") {
-            baseUri = baseUri.replace(scheme: "https");
+          String fullUrl = refUrlOrParam;
+          if (fullUrl.startsWith("http://")) {
+            fullUrl = "https://${fullUrl.substring(7)}";
           }
-          final q = Map<String, String>.from(baseUri.queryParameters);
-          q["accessId"] = key;
-          q["format"] = "json";
-          uri = baseUri.replace(queryParameters: q);
+          final hasQuery = fullUrl.contains("?");
+          final sep = hasQuery ? "&" : "?";
+          if (!fullUrl.contains("accessId=")) {
+            fullUrl += "${sep}accessId=${Uri.encodeQueryComponent(key)}";
+          }
+          if (!fullUrl.contains("format=")) {
+            fullUrl += "&format=json";
+          }
+          uri = Uri.parse(fullUrl);
         } else {
           String cleanRef = refUrlOrParam;
           if (cleanRef.startsWith("journeyDetail?ref=")) {
             cleanRef = cleanRef.substring("journeyDetail?ref=".length);
           } else if (cleanRef.startsWith("journeyDetail?")) {
-            final parsed = Uri.parse("https://dummy.com/$cleanRef");
-            cleanRef = parsed.queryParameters["ref"] ?? cleanRef;
+            cleanRef = cleanRef.substring("journeyDetail?".length);
+            final m = RegExp(r'(?:^|&)ref=([^&]+)').firstMatch(cleanRef);
+            if (m != null) {
+              cleanRef = m.group(1)!;
+            }
+          } else if (cleanRef.startsWith("ref=")) {
+            cleanRef = cleanRef.substring(4);
           }
-          uri = Uri.parse("${config.baseUrl}/journeyDetail").replace(queryParameters: {
-            "ref": cleanRef,
-            "accessId": key,
-            "format": "json",
-          });
+          final base = config.baseUrl.replaceAll(RegExp(r'/+$'), '');
+          uri = Uri.parse("$base/journeyDetail?ref=$cleanRef&accessId=${Uri.encodeQueryComponent(key)}&format=json");
         }
 
         final resp = await http.get(uri).timeout(const Duration(seconds: 10));
         if (resp.statusCode == 200) {
           final data = jsonDecode(resp.body);
-          var rawStops = data["JourneyDetail"]?["Stop"] ??
-              data["journeyDetail"]?["stop"] ??
-              data["Stop"] ??
-              data["stop"];
-          final list = _ensureList(rawStops);
-          List<TripStop> stops = [];
-          for (var s in list) {
-            String depT = _formatTimeStr(s["depTime"]?.toString() ?? s["time"]?.toString() ?? "");
-            String arrT = _formatTimeStr(s["arrTime"]?.toString() ?? "");
-            String bestTime = depT.isNotEmpty ? depT : arrT;
+          if (data is Map<String, dynamic>) {
+            final journeyObj = data["JourneyDetail"] ?? data["journeyDetail"] ?? data;
 
-            String rtDepT = _formatTimeStr(s["rtDepTime"]?.toString() ?? s["rtTime"]?.toString() ?? "");
-            String rtArrT = _formatTimeStr(s["rtArrTime"]?.toString() ?? "");
-            String bestRtTime = rtDepT.isNotEmpty ? rtDepT : (rtArrT.isNotEmpty ? rtArrT : bestTime);
+            dynamic rawStops = journeyObj["Stops"]?["Stop"] ??
+                journeyObj["stops"]?["stop"] ??
+                journeyObj["Stops"] ??
+                journeyObj["stops"] ??
+                journeyObj["Stop"] ??
+                journeyObj["stop"] ??
+                data["Stop"] ??
+                data["stop"];
 
-            stops.add(TripStop(
-              name: s["name"]?.toString() ?? "",
-              time: bestTime,
-              date: s["depDate"]?.toString() ?? s["arrDate"]?.toString() ?? s["date"]?.toString() ?? "",
-              track: s["rtTrack"]?.toString() ?? s["track"]?.toString() ?? "-",
-              rtTime: bestRtTime,
-            ));
+            if (rawStops is Map && rawStops.containsKey("Stop")) {
+              rawStops = rawStops["Stop"];
+            } else if (rawStops is Map && rawStops.containsKey("stop")) {
+              rawStops = rawStops["stop"];
+            }
+
+            final list = _ensureList(rawStops);
+            List<TripStop> stops = [];
+            for (var s in list) {
+              if (s is! Map) continue;
+              String stopName = s["name"]?.toString() ?? s["stop"]?.toString() ?? "";
+              if (stopName.trim().isEmpty) continue;
+
+              String depT = _formatTimeStr(s["depTime"]?.toString() ?? s["time"]?.toString() ?? "");
+              String arrT = _formatTimeStr(s["arrTime"]?.toString() ?? "");
+              String bestTime = depT.isNotEmpty ? depT : arrT;
+
+              String rtDepT = _formatTimeStr(s["rtDepTime"]?.toString() ?? s["rtTime"]?.toString() ?? "");
+              String rtArrT = _formatTimeStr(s["rtArrTime"]?.toString() ?? "");
+              String bestRtTime = rtDepT.isNotEmpty ? rtDepT : (rtArrT.isNotEmpty ? rtArrT : bestTime);
+
+              String track = s["rtTrack"]?.toString() ?? s["track"]?.toString() ?? "";
+              if (track.isEmpty && s["rtPlatform"] is Map) {
+                track = s["rtPlatform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty && s["platform"] is Map) {
+                track = s["platform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty) track = "-";
+
+              stops.add(TripStop(
+                name: stopName,
+                time: bestTime,
+                date: s["depDate"]?.toString() ?? s["arrDate"]?.toString() ?? s["date"]?.toString() ?? "",
+                track: track,
+                rtTime: bestRtTime,
+              ));
+            }
+            if (stops.isNotEmpty) {
+              return ApiResult(data: stops, isMock: false);
+            }
           }
-          if (stops.isNotEmpty) {
-            return ApiResult(data: stops, isMock: false);
-          }
+        } else {
+          fetchError = "接口请求失败 (HTTP ${resp.statusCode})";
+          debugPrint('[ApiClient] getJourneyDetail HTTP error: ${resp.statusCode}');
         }
       } catch (e) {
+        fetchError = "网络请求异常: $e";
         debugPrint('[ApiClient] getJourneyDetail error: $e');
       }
+    } else if (key.isEmpty) {
+      fetchError = "未配置 API Key，无法查询经停站点";
+    } else if (refUrlOrParam.isEmpty) {
+      fetchError = "该车次未提供经停站信息";
     }
 
     if (config.mockFallback) {
@@ -806,6 +849,6 @@ class RejseplanenApiClient {
       );
       return ApiResult(data: mockStops, isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "未获取到经停站信息");
+    return ApiResult(data: [], isMock: false, error: fetchError ?? "未获取到经停站信息");
   }
 }

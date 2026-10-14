@@ -579,6 +579,14 @@ class _TripCardState extends State<TripCard> {
                     ),
                 ],
               ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              child: Text(
+                I18n.t(context, "trip_no_stops"),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
             ),
         ],
       ],
