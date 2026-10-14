@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/station.dart';
+import '../services/location_service.dart';
 import '../i18n/translations.dart';
 import 'board_screen.dart';
 import 'trip_screen.dart';
@@ -59,9 +60,21 @@ class FavoritesScreen extends StatelessWidget {
           leading: const Icon(Icons.star, color: Colors.amber),
           title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text("ID: ${station.id}"),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.grey),
-            onPressed: () => config.removeFavoriteStation(station.id),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.map_outlined, size: 20),
+                tooltip: I18n.t(context, "station_open_in_maps"),
+                onPressed: () {
+                  LocationService.openInMaps(station.lat, station.lon, name: station.name);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                onPressed: () => config.removeFavoriteStation(station.id),
+              ),
+            ],
           ),
           onTap: () {
             Navigator.of(context).push(
@@ -148,9 +161,21 @@ class FavoritesScreen extends StatelessWidget {
                   station.desc ?? (station.distance != null ? station.distance! : "ID: ${station.id}"),
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close, size: 16, color: Colors.grey),
-                  onPressed: () => config.removeRecentStation(station.id),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.map_outlined, size: 20),
+                      tooltip: I18n.t(context, "station_open_in_maps"),
+                      onPressed: () {
+                        LocationService.openInMaps(station.lat, station.lon, name: station.name);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                      onPressed: () => config.removeRecentStation(station.id),
+                    ),
+                  ],
                 ),
                 onTap: () {
                   Navigator.of(context).push(

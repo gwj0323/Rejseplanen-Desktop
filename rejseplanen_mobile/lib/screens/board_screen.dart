@@ -120,16 +120,13 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     final client = RejseplanenApiClient(config);
     final isArrival = _tabController.index == 1;
 
-    final bool useTrain = _selectedMode == "ALL" || _selectedMode == "TRAIN";
-    final bool useMetro = _selectedMode == "ALL" || _selectedMode == "METRO";
-    final bool useBus = _selectedMode == "ALL" || _selectedMode == "BUS";
-
+    // Always fetch all transit modes so client-side filter chips switch instantaneously
     if (isArrival) {
       final res = await client.getArrivalBoard(
         _currentStation.id,
-        useTrain: useTrain,
-        useMetro: useMetro,
-        useBus: useBus,
+        useTrain: true,
+        useMetro: true,
+        useBus: true,
       );
       if (mounted) {
         setState(() {
@@ -142,9 +139,9 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     } else {
       final res = await client.getDepartureBoard(
         _currentStation.id,
-        useTrain: useTrain,
-        useMetro: useMetro,
-        useBus: useBus,
+        useTrain: true,
+        useMetro: true,
+        useBus: true,
       );
       if (mounted) {
         setState(() {
@@ -157,12 +154,54 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     }
   }
 
+  bool _matchesMode(Departure item, String mode) {
+    if (mode == "ALL") return true;
+    final info = TransitBadgeHelper.parse(item.name, item.type);
+    final cat = info.category.toUpperCase();
+    final type = item.type.toUpperCase();
+    final name = item.name.toUpperCase();
+
+    if (mode == "METRO") {
+      return cat == "METRO" || type.contains("MET") || RegExp(r'\bM[1-4]\b').hasMatch(name);
+    }
+    if (mode == "BUS") {
+      return cat == "BUS" ||
+          type.contains("BUS") ||
+          RegExp(r'^\d+[A-Z]?$').hasMatch(name.replaceAll(RegExp(r'^(BUS|BYBUS)\s*', caseSensitive: false), '').trim());
+    }
+    if (mode == "TRAIN") {
+      if (cat == "METRO" || cat == "BUS") return false;
+      if (type.contains("MET") || type.contains("BUS")) return false;
+      return true;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final config = Provider.of<AppConfig>(context);
     final isArrival = _tabController.index == 1;
     final currentList = isArrival ? _arrivals : _departures;
+
+    int countAll = currentList.length;
+    int countTrain = 0;
+    int countMetro = 0;
+    int countBus = 0;
+
+    for (final d in currentList) {
+      if (_matchesMode(d, "METRO")) {
+        countMetro++;
+      } else if (_matchesMode(d, "BUS")) {
+        countBus++;
+      } else {
+        countTrain++;
+      }
+    }
+
+    final filteredList = _selectedMode == "ALL"
+        ? currentList
+        : currentList.where((d) => _matchesMode(d, _selectedMode)).toList();
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -268,20 +307,18 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                     }
                   },
                 ),
-                if (_currentStation.lat != 0.0 && _currentStation.lon != 0.0) ...[
-                  const SizedBox(width: 6),
-                  IconButton.filledTonal(
-                    icon: const Icon(Icons.map_outlined, size: 20),
-                    tooltip: I18n.t(context, "station_open_in_maps"),
-                    onPressed: () {
-                      LocationService.openInMaps(
-                        _currentStation.lat,
-                        _currentStation.lon,
-                        name: _currentStation.name,
-                      );
-                    },
-                  ),
-                ],
+                const SizedBox(width: 6),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.map_outlined, size: 20),
+                  tooltip: I18n.t(context, "station_open_in_maps"),
+                  onPressed: () {
+                    LocationService.openInMaps(
+                      _currentStation.lat,
+                      _currentStation.lon,
+                      name: _currentStation.name,
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -292,13 +329,13 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                _buildModeChip(context, "ALL", I18n.t(context, "board_filter_all"), Icons.apps),
+                _buildModeChip(context, "ALL", I18n.t(context, "board_filter_all"), Icons.apps, countAll),
                 const SizedBox(width: 8),
-                _buildModeChip(context, "TRAIN", I18n.t(context, "board_filter_train"), Icons.train),
+                _buildModeChip(context, "TRAIN", I18n.t(context, "board_filter_train"), Icons.train, countTrain),
                 const SizedBox(width: 8),
-                _buildModeChip(context, "METRO", I18n.t(context, "board_filter_metro"), Icons.subway),
+                _buildModeChip(context, "METRO", I18n.t(context, "board_filter_metro"), Icons.subway, countMetro),
                 const SizedBox(width: 8),
-                _buildModeChip(context, "BUS", I18n.t(context, "board_filter_bus"), Icons.directions_bus),
+                _buildModeChip(context, "BUS", I18n.t(context, "board_filter_bus"), Icons.directions_bus, countBus),
               ],
             ),
           ),
@@ -315,7 +352,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _fetchBoard(),
-              child: currentList.isEmpty && !_isLoading
+              child: filteredList.isEmpty && !_isLoading
                   ? Center(
                       child: Text(
                         I18n.t(context, "board_no_departures"),
@@ -323,10 +360,10 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                       ),
                     )
                   : ListView.separated(
-                      itemCount: currentList.length,
+                      itemCount: filteredList.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (ctx, i) {
-                        final item = currentList[i];
+                        final item = filteredList[i];
                         return _buildBoardTile(context, item);
                       },
                     ),
@@ -449,9 +486,11 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildModeChip(BuildContext context, String mode, String label, IconData icon) {
+  Widget _buildModeChip(BuildContext context, String mode, String label, IconData icon, int count) {
     final theme = Theme.of(context);
     final isSelected = _selectedMode == mode;
+    final displayLabel = count > 0 ? "$label ($count)" : label;
+
     return FilterChip(
       selected: isSelected,
       showCheckmark: false,
@@ -461,7 +500,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
         color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
       ),
       label: Text(
-        label,
+        displayLabel,
         style: TextStyle(
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -473,10 +512,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
       backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.35),
       selectedColor: theme.colorScheme.primary,
       onSelected: (_) {
-        if (_selectedMode != mode) {
-          setState(() => _selectedMode = mode);
-          _fetchBoard();
-        }
+        setState(() => _selectedMode = mode);
       },
     );
   }

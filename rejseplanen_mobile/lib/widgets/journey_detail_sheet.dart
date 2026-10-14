@@ -4,6 +4,7 @@ import '../models/departure.dart';
 import '../models/trip.dart';
 import '../config/app_config.dart';
 import '../services/api_client.dart';
+import '../services/location_service.dart';
 import '../i18n/translations.dart';
 import 'transit_badge.dart';
 
@@ -147,6 +148,14 @@ class _JourneyDetailSheetState extends State<JourneyDetailSheet> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.map_outlined),
+                  tooltip: I18n.t(context, "station_open_in_maps"),
+                  onPressed: () {
+                    final targetName = dep.direction.isNotEmpty ? dep.direction : dep.stop;
+                    LocationService.openInMaps(0.0, 0.0, name: targetName);
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -336,6 +345,17 @@ class _JourneyDetailSheetState extends State<JourneyDetailSheet> {
                                               ),
                                             ),
                                           ),
+                                        const SizedBox(width: 4),
+                                        InkWell(
+                                          borderRadius: BorderRadius.circular(12),
+                                          onTap: () {
+                                            LocationService.openInMaps(0.0, 0.0, name: stop.name);
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(4.0),
+                                            child: Icon(Icons.map_outlined, size: 16, color: Colors.grey.shade500),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),

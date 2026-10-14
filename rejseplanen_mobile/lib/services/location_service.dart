@@ -126,21 +126,38 @@ class LocationService {
 
   /// Open station coordinates in device map app (Apple Maps on iOS, Google Maps / Geo Intent on Android)
   static Future<bool> openInMaps(double lat, double lon, {String? name}) async {
-    if (lat == 0.0 && lon == 0.0) return false;
-    final encodedName = Uri.encodeComponent(name ?? 'Station');
-    final googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lon');
-    final appleMapsUrl = Uri.parse('https://maps.apple.com/?q=$encodedName&ll=$lat,$lon');
+    final hasCoord = (lat != 0.0 || lon != 0.0);
+    final stationName = (name != null && name.trim().isNotEmpty) ? name.trim() : 'Station';
+    final encodedName = Uri.encodeComponent(stationName);
 
     try {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final Uri appleMapsUrl;
+        if (hasCoord) {
+          appleMapsUrl = Uri.parse('https://maps.apple.com/?q=$encodedName&ll=$lat,$lon');
+        } else {
+          appleMapsUrl = Uri.parse('https://maps.apple.com/?q=$encodedName');
+        }
         if (await canLaunchUrl(appleMapsUrl)) {
           return await launchUrl(appleMapsUrl, mode: LaunchMode.externalApplication);
         }
       } else {
-        final geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon($encodedName)');
+        final Uri geoUri;
+        if (hasCoord) {
+          geoUri = Uri.parse('geo:$lat,$lon?q=$lat,$lon($encodedName)');
+        } else {
+          geoUri = Uri.parse('geo:0,0?q=$encodedName');
+        }
         if (await canLaunchUrl(geoUri)) {
           return await launchUrl(geoUri, mode: LaunchMode.externalApplication);
         }
+      }
+
+      final Uri googleMapsUrl;
+      if (hasCoord) {
+        googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lon');
+      } else {
+        googleMapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encodedName');
       }
       if (await canLaunchUrl(googleMapsUrl)) {
         return await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);

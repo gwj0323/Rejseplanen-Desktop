@@ -522,12 +522,20 @@ class _StationScreenState extends State<StationScreen> {
               color: isFav ? Colors.amber : null,
               size: 22,
             ),
+            tooltip: isFav ? I18n.t(context, "fav_title") : I18n.t(context, "board_add_fav"),
             onPressed: () {
               if (isFav) {
                 config.removeFavoriteStation(station.id);
               } else {
                 config.addFavoriteStation(station);
               }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.map_outlined, size: 20),
+            tooltip: I18n.t(context, "station_open_in_maps"),
+            onPressed: () {
+              LocationService.openInMaps(station.lat, station.lon, name: station.name);
             },
           ),
           PopupMenuButton<String>(
@@ -567,17 +575,16 @@ class _StationScreenState extends State<StationScreen> {
                   ],
                 ),
               ),
-              if (station.lat != 0.0 && station.lon != 0.0)
-                PopupMenuItem(
-                  value: 'map',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.map_outlined, size: 18),
-                      const SizedBox(width: 8),
-                      Text(I18n.t(context, "station_open_in_maps")),
-                    ],
-                  ),
+              PopupMenuItem(
+                value: 'map',
+                child: Row(
+                  children: [
+                    const Icon(Icons.map_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text(I18n.t(context, "station_open_in_maps")),
+                  ],
                 ),
+              ),
             ],
           ),
         ],
