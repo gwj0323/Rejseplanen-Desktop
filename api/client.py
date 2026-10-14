@@ -63,6 +63,20 @@ def _parse_time_diff_min(time_str: str, rt_time_str: str) -> int:
     except Exception:
         return 0
 
+def _parse_duration_minutes(duration_str: str) -> int:
+    """Parse an ISO 8601 duration such as 'PT1H30M', 'P1DT2H15M' or 'PT45M'
+    into total minutes. Returns 0 for empty or unparseable input."""
+    if not duration_str:
+        return 0
+    m = re.match(
+        r"^P(?!$)(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$",
+        str(duration_str).strip().upper()
+    )
+    if not m:
+        return 0
+    days, hours, minutes, seconds = (int(g) if g else 0 for g in m.groups())
+    return days * 1440 + hours * 60 + minutes + (1 if seconds >= 30 else 0)
+
 class RejseplanenClient:
     """Client for Rejseplanen REST API 2.0 with automatic mock data fallback and detailed error reporting."""
 
@@ -606,9 +620,7 @@ class RejseplanenClient:
                     
                     duration_min = _parse_time_diff_min(dep_time, arr_time)
                     if duration_min == 0 and "duration" in t:
-                        m = re.search(r"(\d+)M", str(t["duration"]))
-                        if m:
-                            duration_min = int(m.group(1))
+                        duration_min = _parse_duration_minutes(str(t["duration"]))
                             
                     trips.append({
                         "idx": str(idx),
