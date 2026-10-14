@@ -33,7 +33,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return PopScope(
       canPop: _currentIndex == 0,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvoked: (didPop) {
         if (didPop) return;
         if (_currentIndex != 0) {
           setState(() => _currentIndex = 0);
