@@ -23,7 +23,7 @@
 
 ## 下载安装
 
-安装包请前往仓库 **[Releases](https://github.com/gwj0323/Rejseplanen-Desktop/releases)** 页面下载：
+安装包请前往仓库 **[Releases](https://github.com/gwj0323/spor-app/releases)** 页面下载：
 
 - **Android**：下载 `app-release.apk` 直接安装。
 - **iOS**：下载 `spor-ios-release.ipa`，支持使用 [Sideloadly](https://sideloadly.io/)、AltStore 或 TrollStore 自签或侧载安装。

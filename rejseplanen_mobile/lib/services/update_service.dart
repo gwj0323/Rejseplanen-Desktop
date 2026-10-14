@@ -36,7 +36,7 @@ class UpdateCheckResult {
 
 class UpdateService {
   static const String repoOwner = 'gwj0323';
-  static const String repoName = 'Rejseplanen-Desktop';
+  static const String repoName = 'spor-app';
 
   /// Compare two semver strings (e.g. "1.0.3" vs "1.0.2")
   /// Returns > 0 if v1 > v2, < 0 if v1 < v2, 0 if equal.

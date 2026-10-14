@@ -2,9 +2,9 @@
 
 [English](#english) | [中文说明](#中文)
 
-[![Release](https://img.shields.io/github/v/release/gwj0323/Rejseplanen-Desktop?color=blue)](https://github.com/gwj0323/Rejseplanen-Desktop/releases)
-[![Build Android APK](https://github.com/gwj0323/Rejseplanen-Desktop/actions/workflows/build-apk.yml/badge.svg)](https://github.com/gwj0323/Rejseplanen-Desktop/actions/workflows/build-apk.yml)
-[![Build iOS IPA](https://github.com/gwj0323/Rejseplanen-Desktop/actions/workflows/build-ios.yml/badge.svg)](https://github.com/gwj0323/Rejseplanen-Desktop/actions/workflows/build-ios.yml)
+[![Release](https://img.shields.io/github/v/release/gwj0323/spor-app?color=blue)](https://github.com/gwj0323/spor-app/releases)
+[![Build Android APK](https://github.com/gwj0323/spor-app/actions/workflows/build-apk.yml/badge.svg)](https://github.com/gwj0323/spor-app/actions/workflows/build-apk.yml)
+[![Build iOS IPA](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml/badge.svg)](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml)
 
 ---
 
@@ -28,7 +28,7 @@ It integrates directly with the official [Rejseplanen REST API](https://labs.rej
 
 ### Downloads
 
-Pre-built binaries can be downloaded from the **[Releases](https://github.com/gwj0323/Rejseplanen-Desktop/releases)** page:
+Pre-built binaries can be downloaded from the **[Releases](https://github.com/gwj0323/spor-app/releases)** page:
 
 | Platform | Package | Installation |
 | :--- | :--- | :--- |
@@ -101,7 +101,7 @@ Spor 是一款开源的丹麦公共交通出行客户端，支持 Android、iOS 
 
 ### 下载安装
 
-最新安装包请前往 **[Releases 页面](https://github.com/gwj0323/Rejseplanen-Desktop/releases)** 下载：
+最新安装包请前往 **[Releases 页面](https://github.com/gwj0323/spor-app/releases)** 下载：
 
 | 平台 | 安装包 | 安装方式 |
 | :--- | :--- | :--- |

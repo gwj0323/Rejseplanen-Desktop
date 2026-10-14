@@ -163,10 +163,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  final downloadUrl = rel.apkDownloadUrl ?? rel.ipaDownloadUrl ?? rel.htmlUrl;
-                  UpdateService.openReleaseUrl(downloadUrl);
+                  UpdateService.openReleaseUrl(rel.htmlUrl);
                 },
-                icon: const Icon(Icons.download, size: 16),
+                icon: const Icon(Icons.open_in_new, size: 16),
                 label: Text(I18n.t(context, "settings_download_update")),
               ),
             ],

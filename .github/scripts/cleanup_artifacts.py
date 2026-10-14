@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 
 TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-REPO = os.environ.get("GITHUB_REPOSITORY", "gwj0323/Rejseplanen-Desktop")
+REPO = os.environ.get("GITHUB_REPOSITORY", "gwj0323/spor-app")
 KEEP_COUNT = int(os.environ.get("KEEP_COUNT", "1"))
 
 if not TOKEN:

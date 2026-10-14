@@ -29,4 +29,4 @@ Spor does not embed third-party advertising SDKs, behavioral analytics trackers,
 All user preferences (such as favorite stations, recent searches, and UI theme options) are saved exclusively on your local device storage using standard sandboxed SharedPreferences. Clearing app data or uninstalling the app permanently erases this data.
 
 ## 5. Contact
-If you have any questions or concerns regarding this Privacy Policy, please open an issue on our GitHub repository: [github.com/gwj0323/Rejseplanen-Desktop](https://github.com/gwj0323/Rejseplanen-Desktop/issues).
+If you have any questions or concerns regarding this Privacy Policy, please open an issue on our GitHub repository: [github.com/gwj0323/spor-app](https://github.com/gwj0323/spor-app/issues).
