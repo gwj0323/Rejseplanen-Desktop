@@ -58,3 +58,5 @@ build_artifacts/
 release_assets/
 *.ipa
 *.apk
+*.aab
+dist_*/
