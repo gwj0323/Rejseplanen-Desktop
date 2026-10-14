@@ -6,8 +6,8 @@ import '../models/station.dart';
 import '../models/trip.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.0.7';
-  static const int appBuildNumber = 8;
+  static const String appVersion = '1.0.8';
+  static const int appBuildNumber = 9;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
@@ -19,6 +19,7 @@ class AppConfig extends ChangeNotifier {
   String _language = 'system'; // 'system' (Follow system), 'zh_CN', 'en_US', 'da_DK'
   ThemeMode _themeMode = ThemeMode.system;
   String _accentColor = 'system'; // 'system' (Material You) or hex like '#C72027'
+  String _navBarStyle = 'liquid_glass'; // 'liquid_glass' (iOS 27 Fluid Blur) or 'material3' (Classic Docked)
   int _autoRefreshInterval = 30;
 
   List<Station> _favoriteStations = [
@@ -79,6 +80,7 @@ class AppConfig extends ChangeNotifier {
   }
 
   int get autoRefreshInterval => _autoRefreshInterval;
+  String get navBarStyle => _navBarStyle;
   List<Station> get favoriteStations => _favoriteStations;
   List<Map<String, Station>> get favoriteTrips => _favoriteTrips;
   List<String> get recentSearches => _recentSearches;
@@ -143,6 +145,7 @@ class AppConfig extends ChangeNotifier {
         _language = data['language'] ?? 'system';
         _autoRefreshInterval = data['auto_refresh_interval'] ?? 30;
         _accentColor = data['accent_color'] ?? 'system';
+        _navBarStyle = data['nav_bar_style'] ?? 'liquid_glass';
 
         final themeStr = data['theme'] ?? 'Auto';
         if (themeStr == 'Light') {
@@ -210,6 +213,7 @@ class AppConfig extends ChangeNotifier {
         'language': _language,
         'theme': themeStr,
         'accent_color': _accentColor,
+        'nav_bar_style': _navBarStyle,
         'auto_refresh_interval': _autoRefreshInterval,
         'favorite_stations': _favoriteStations.map((s) => s.toJson()).toList(),
         'favorite_trips': _favoriteTrips.map((t) => {
@@ -255,6 +259,13 @@ class AppConfig extends ChangeNotifier {
   void setAccentColor(String color) {
     _accentColor = color;
     saveSettings();
+  }
+
+  void setNavBarStyle(String style) {
+    if (_navBarStyle != style) {
+      _navBarStyle = style;
+      saveSettings();
+    }
   }
 
   void setAutoRefreshInterval(int interval) {

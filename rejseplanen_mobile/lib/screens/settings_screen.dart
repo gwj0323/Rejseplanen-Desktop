@@ -222,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(I18n.t(context, "settings_title"), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
           // Group 1: API Configuration
           Text(
@@ -461,6 +461,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                       onChanged: (val) {
                         if (val != null) config.setThemeMode(val);
+                      },
+                    ),
+                  ),
+                  const Divider(height: 1),
+
+                  // Navigation Bar Style Selector
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.blur_on),
+                    title: Text(I18n.t(context, "settings_navbar_style")),
+                    subtitle: Text(
+                      I18n.t(context, "settings_navbar_style_desc"),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    trailing: DropdownButton<String>(
+                      value: config.navBarStyle,
+                      underline: const SizedBox(),
+                      items: [
+                        DropdownMenuItem(
+                          value: "liquid_glass",
+                          child: Text(I18n.t(context, "navbar_style_glass")),
+                        ),
+                        DropdownMenuItem(
+                          value: "material3",
+                          child: Text(I18n.t(context, "navbar_style_m3")),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) config.setNavBarStyle(val);
                       },
                     ),
                   ),

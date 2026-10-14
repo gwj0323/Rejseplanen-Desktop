@@ -295,7 +295,7 @@ class _TripScreenState extends State<TripScreen> {
       body: RefreshIndicator(
         onRefresh: _searchTrips,
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.only(bottom: 100),
           children: [
             // Active Ongoing Trip Banner
             if (config.hasActiveOngoingTrip && config.activeOngoingTrip != null) ...[

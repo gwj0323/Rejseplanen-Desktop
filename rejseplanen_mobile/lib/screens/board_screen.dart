@@ -360,6 +360,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                       ),
                     )
                   : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 100),
                       itemCount: filteredList.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (ctx, i) {
