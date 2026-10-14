@@ -110,5 +110,46 @@ def patch():
             f.write(content)
         print("Patched compileSdkVersion 34 in app/build.gradle")
 
+    # 4. Copy permanent release keystore to android/app/spor-release.jks
+    keystore_src = "keystores/spor-release.jks"
+    if not os.path.exists(keystore_src) and os.path.exists("../.github/keystores/spor-release.jks"):
+        keystore_src = "../.github/keystores/spor-release.jks"
+
+    keystore_dest = "android/app/spor-release.jks"
+    if os.path.exists(keystore_src):
+        os.makedirs("android/app", exist_ok=True)
+        shutil.copy2(keystore_src, keystore_dest)
+        print(f"Copied release keystore from {keystore_src} to {keystore_dest}")
+    else:
+        print(f"WARNING: Release keystore not found at {keystore_src}!")
+
+    # 5. Patch signingConfigs and buildTypes in app/build.gradle
+    if os.path.exists(app_gradle):
+        with open(app_gradle, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        signing_block = """    signingConfigs {
+        release {
+            keyAlias 'spor'
+            keyPassword 'spor123456'
+            storeFile file('spor-release.jks')
+            storePassword 'spor123456'
+        }
+    }
+
+"""
+        if "signingConfigs {" not in content:
+            content = content.replace("buildTypes {", signing_block + "buildTypes {")
+
+        content = re.sub(
+            r"signingConfig\s*=?\s*signingConfigs\.debug",
+            "signingConfig signingConfigs.release",
+            content
+        )
+        with open(app_gradle, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("Patched release signing config in app/build.gradle")
+
 if __name__ == "__main__":
     patch()
+

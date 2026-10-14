@@ -49,9 +49,18 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    signingConfigs {
+        release {
+            keyAlias 'spor'
+            keyPassword 'spor123456'
+            storeFile file('spor-release.jks')
+            storePassword 'spor123456'
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
