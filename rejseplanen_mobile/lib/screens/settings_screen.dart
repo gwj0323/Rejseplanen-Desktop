@@ -466,31 +466,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const Divider(height: 1),
 
-                  // Navigation Bar Style Selector
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.blur_on),
-                    title: Text(I18n.t(context, "settings_navbar_style")),
-                    subtitle: Text(
-                      I18n.t(context, "settings_navbar_style_desc"),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                    trailing: DropdownButton<String>(
-                      value: config.navBarStyle,
-                      underline: const SizedBox(),
-                      items: [
-                        DropdownMenuItem(
-                          value: "liquid_glass",
-                          child: Text(I18n.t(context, "navbar_style_glass")),
+                  // Navigation Bar Style Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.blur_on),
+                          title: Text(I18n.t(context, "settings_navbar_style")),
+                          subtitle: Text(
+                            I18n.t(context, "settings_navbar_style_desc"),
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
                         ),
-                        DropdownMenuItem(
-                          value: "material3",
-                          child: Text(I18n.t(context, "navbar_style_m3")),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<String>(
+                            showSelectedIcon: true,
+                            segments: [
+                              ButtonSegment<String>(
+                                value: "liquid_glass",
+                                icon: const Icon(Icons.auto_awesome, size: 16),
+                                label: Text(I18n.t(context, "navbar_style_glass")),
+                              ),
+                              ButtonSegment<String>(
+                                value: "material3",
+                                icon: const Icon(Icons.dock, size: 16),
+                                label: Text(I18n.t(context, "navbar_style_m3")),
+                              ),
+                            ],
+                            selected: {config.navBarStyle},
+                            onSelectionChanged: (newSelection) {
+                              if (newSelection.isNotEmpty) {
+                                config.setNavBarStyle(newSelection.first);
+                              }
+                            },
+                          ),
                         ),
                       ],
-                      onChanged: (val) {
-                        if (val != null) config.setNavBarStyle(val);
-                      },
                     ),
                   ),
                   const Divider(height: 24),
