@@ -7,6 +7,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+# Least-privilege token: the build only needs to read the repo and upload artifacts.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Flutter iOS App
