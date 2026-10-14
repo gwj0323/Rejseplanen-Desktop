@@ -17,16 +17,14 @@ It integrates directly with the official [Rejseplanen REST API](https://labs.rej
 
 ### Features
 
-- **Journey Planner**: Point-to-point transit routing with departure/arrival filters, transport mode toggles, platform indicators, walking transfer directions, and real-time delay info.
-- **Stop-by-Stop Timeline (JourneyDetail)**: Tap any leg of a trip to inspect all intermediate stops along the route with scheduled vs. actual arrival/departure times and track changes.
-- **Live Station Boards**: Real-time departure and arrival boards for any station or stop, showing delays, track reassignments, and automatic 30-second refreshes.
-- **Trip Notifications**:
-  - Timed departure, transfer, and arrival alerts to keep you on schedule.
-  - Ongoing status card in the notification drawer showing current leg progress, upcoming stop, and live ETA.
-- **Calendar Sync**: Add planned journeys directly to Apple Calendar or Google Calendar with one tap, including transfer steps and platform notes.
-- **Nearby Stops**: Find bus, train, and metro stations close to your current GPS position, with searchable history.
-- **Localization & Themes**: Full support for English, Danish, and Chinese. Includes Dark Mode and dynamic Material You color theming.
-- **Offline Demo**: Built-in mock datasets allow exploring all core features without needing an API key.
+- **Route Planning**: Search journeys with departure/arrival time filters, transit mode selection, platform numbers, walking transfers, and live delay info.
+- **Intermediate Stops**: Tap any leg of a trip to see all stops along the route, scheduled vs. actual arrival times, and platform changes.
+- **Live Departure Boards**: Real-time station departure and arrival boards with delay alerts, track changes, and 30-second auto-refresh.
+- **Trip Notifications**: Alerts for departure, transfers, and approaching your stop, plus an ongoing status notification showing your next stop and ETA.
+- **Calendar Export**: Export trips to Apple Calendar or Google Calendar with one click.
+- **Nearby Stops**: Find bus, train, and metro stops near your current location.
+- **Themes & Languages**: English, Danish, and Chinese. Supports dark mode and Material You dynamic colors.
+- **Offline Demo**: Built-in mock data for testing without an API key.
 
 ### Downloads
 
