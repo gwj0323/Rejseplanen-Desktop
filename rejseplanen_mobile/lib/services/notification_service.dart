@@ -178,15 +178,15 @@ class NotificationService {
   }
 
   /// Parse time string like "14:35" into a DateTime for today or tomorrow
-  DateTime _parseTripDateTime(String timeStr, DateTime baseDate) {
+  DateTime _parseTripDateTime(String timeStr, DateTime baseDate, {bool hasExplicitDate = false}) {
     try {
       final parts = timeStr.trim().split(':');
       if (parts.length >= 2) {
         int hour = int.parse(parts[0]);
         int minute = int.parse(parts[1]);
         DateTime dt = DateTime(baseDate.year, baseDate.month, baseDate.day, hour, minute);
-        // If time is significantly earlier than now (e.g. crossing midnight into next day)
-        if (dt.isBefore(baseDate.subtract(const Duration(hours: 4)))) {
+        // Only guess about crossing midnight when no explicit trip date is known.
+        if (!hasExplicitDate && dt.isBefore(baseDate.subtract(const Duration(hours: 4)))) {
           dt = dt.add(const Duration(days: 1));
         }
         return dt;
@@ -195,6 +195,62 @@ class NotificationService {
       debugPrint('[NotificationService] Error parsing time $timeStr: $e');
     }
     return baseDate;
+  }
+
+  /// Parse a HAFAS date ('dd.mm.yy', 'dd.mm.yyyy' or 'yyyy-mm-dd') into a
+  /// DateTime, or null when absent/unparseable.
+  DateTime? _parseHafasDate(String? dateStr) {
+    if (dateStr == null || dateStr.trim().isEmpty) return null;
+    final s = dateStr.trim();
+    try {
+      if (s.contains('-')) {
+        final p = s.split('-');
+        if (p.length == 3) {
+          final y = int.parse(p[0]);
+          final m = int.parse(p[1]);
+          final d = int.parse(p[2]);
+          if (y > 0 && m > 0 && d > 0) return DateTime(y, m, d);
+        }
+      } else if (s.contains('.')) {
+        final p = s.split('.');
+        if (p.length == 3) {
+          final y = p[2].length == 2 ? int.parse('20${p[2]}') : int.parse(p[2]);
+          final m = int.parse(p[1]);
+          final d = int.parse(p[0]);
+          if (y > 0 && m > 0 && d > 0) return DateTime(y, m, d);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Deterministic 32-bit FNV-1a hash so notification IDs stay stable across
+  /// app restarts (Dart's String.hashCode gives no such guarantee) and are
+  /// derived from the trip itself instead of the result-list index, which is
+  /// only '1'..'N' and collides between different searches.
+  int _stableHash(String s) {
+    var h = 0x811c9dc5;
+    for (final c in s.codeUnits) {
+      h ^= c;
+      h = (h * 0x01000193) & 0x7FFFFFFF;
+    }
+    return h;
+  }
+
+  int _tripIdBase(TripProposal trip, {Station? origin, Station? destination}) {
+    final sig = StringBuffer()
+      ..write(trip.depTime)
+      ..write('|')
+      ..write(trip.arrTime);
+    if (origin != null) {
+      sig.write('|');
+      sig.write(origin.name);
+    }
+    if (destination != null) {
+      sig.write('|');
+      sig.write(destination.name);
+    }
+    return _stableHash(sig.toString());
   }
 
   /// Schedule trip reminders for departure, transfers, and arrival
@@ -215,11 +271,20 @@ class NotificationService {
     final List<Map<String, dynamic>> scheduledReminders = [];
     final DateTime now = DateTime.now();
 
+    // Anchor reminder times to the trip's real date (from the first leg)
+    // instead of assuming "today or tomorrow".
+    final DateTime? tripDate = _parseHafasDate(
+      trip.legs.isNotEmpty ? trip.legs.first.origin.date : null,
+    );
+    final DateTime baseDate = tripDate ?? now;
+    final bool hasExplicitDate = tripDate != null;
+    final int idBase = _tripIdBase(trip, origin: origin, destination: destination);
+
     // 1. Departure Reminder (出发提醒)
     if (enableDeparture && trip.depTime.isNotEmpty) {
-      final depDateTime = _parseTripDateTime(trip.depTime, now);
+      final depDateTime = _parseTripDateTime(trip.depTime, baseDate, hasExplicitDate: hasExplicitDate);
       final triggerTime = depDateTime.subtract(Duration(minutes: depAdvanceMinutes));
-      final int depId = (trip.idx.hashCode + 101).abs() % 100000;
+      final int depId = (idBase + 101) % 100000;
 
       final firstLegName = trip.legs.isNotEmpty ? trip.legs.first.name : I18n.tr('notif_transit_fallback', lang);
       final platform = trip.legs.isNotEmpty && trip.legs.first.origin.track.isNotEmpty && trip.legs.first.origin.track != '-'
@@ -264,10 +329,15 @@ class NotificationService {
 
         if (currentLeg.destination.time.isEmpty) continue;
 
-        final transferArrTime = _parseTripDateTime(currentLeg.destination.time, now);
+        final transferDate = _parseHafasDate(currentLeg.destination.date) ?? baseDate;
+        final transferArrTime = _parseTripDateTime(
+          currentLeg.destination.time,
+          transferDate,
+          hasExplicitDate: hasExplicitDate || currentLeg.destination.date.isNotEmpty,
+        );
         // Remind 5 minutes before arriving at transfer station
         final triggerTime = transferArrTime.subtract(const Duration(minutes: 5));
-        final int transferId = (trip.idx.hashCode + 200 + i).abs() % 100000;
+        final int transferId = (idBase + 200 + i) % 100000;
 
         final nextPlatform = nextLeg.origin.track.isNotEmpty && nextLeg.origin.track != '-'
             ? I18n.tr('notif_track_suffix', lang, {'track': nextLeg.origin.track})
@@ -307,9 +377,15 @@ class NotificationService {
 
     // 3. Arrival Reminder (下车提醒)
     if (enableArrival && trip.arrTime.isNotEmpty) {
-      final arrDateTime = _parseTripDateTime(trip.arrTime, now);
+      final lastLegDate = trip.legs.isNotEmpty ? _parseHafasDate(trip.legs.last.destination.date) : null;
+      final arrBase = lastLegDate ?? baseDate;
+      final arrDateTime = _parseTripDateTime(
+        trip.arrTime,
+        arrBase,
+        hasExplicitDate: hasExplicitDate || lastLegDate != null,
+      );
       final triggerTime = arrDateTime.subtract(Duration(minutes: arrAdvanceMinutes));
-      final int arrId = (trip.idx.hashCode + 301).abs() % 100000;
+      final int arrId = (idBase + 301) % 100000;
 
       final title = I18n.tr('notif_arr_title', lang, {'station': destination.name});
       final body = I18n.tr('notif_arr_body', lang, {
@@ -403,15 +479,20 @@ class NotificationService {
   }
 
   /// Cancel all reminders for a given trip proposal
-  Future<void> cancelTripReminders(TripProposal trip) async {
+  Future<void> cancelTripReminders(
+    TripProposal trip, {
+    Station? origin,
+    Station? destination,
+  }) async {
     try {
-      final int depId = (trip.idx.hashCode + 101).abs() % 100000;
-      final int arrId = (trip.idx.hashCode + 301).abs() % 100000;
+      final int idBase = _tripIdBase(trip, origin: origin, destination: destination);
+      final int depId = (idBase + 101) % 100000;
+      final int arrId = (idBase + 301) % 100000;
       await _notificationsPlugin.cancel(depId);
       await _notificationsPlugin.cancel(arrId);
 
       for (int i = 0; i < trip.legs.length; i++) {
-        final int transferId = (trip.idx.hashCode + 200 + i).abs() % 100000;
+        final int transferId = (idBase + 200 + i) % 100000;
         await _notificationsPlugin.cancel(transferId);
       }
       debugPrint('[NotificationService] Cancelled reminders for trip ${trip.idx}');

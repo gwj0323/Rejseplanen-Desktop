@@ -42,6 +42,15 @@ def patch():
 """
         if "android.permission.USE_EXACT_ALARM" not in content:
             content = content.replace("<application", perms + "    <application")
+        # The API key is stored in SharedPreferences; keep it out of adb
+        # backups and cloud backups of the app's private data.
+        if "android:allowBackup" not in content:
+            content = re.sub(
+                r"<application\b",
+                '<application android:allowBackup="false"',
+                content,
+                count=1,
+            )
         if "ScheduledNotificationReceiver" not in content:
             content = content.replace("<activity", receivers + "        <activity")
         content = re.sub(r'android:label="[^"]*"', 'android:label="Spor"', content)
