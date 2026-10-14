@@ -10,6 +10,7 @@ on:
 # Least-privilege token: the build only needs to read the repo and upload artifacts.
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -61,3 +62,12 @@ jobs:
         with:
           name: spor-release-apk
           path: rejseplanen_mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 3
+
+      - name: Prune older artifacts
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          KEEP_COUNT: '1'
+        run: python3 .github/scripts/cleanup_artifacts.py
