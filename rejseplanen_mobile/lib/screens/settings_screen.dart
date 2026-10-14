@@ -182,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    I18n.tr(context, "settings_already_latest", {
+                    I18n.t(context, "settings_already_latest", {
                       "version": AppConfig.appVersion,
                     }),
                   ),
