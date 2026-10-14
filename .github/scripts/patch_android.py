@@ -99,7 +99,7 @@ def patch():
                 f.write(content)
             print(f"Patched Kotlin version in {fn}")
 
-    # 3. Upgrade compileSdkVersion to 34 and enable desugaring in app/build.gradle
+    # 3. Upgrade compileSdkVersion to 34 and enable multiDex in app/build.gradle
     app_gradle = "android/app/build.gradle"
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
@@ -110,29 +110,9 @@ def patch():
         if "multiDexEnabled" not in content and "defaultConfig {" in content:
             content = content.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
 
-        if "coreLibraryDesugaringEnabled" not in content:
-            if "compileOptions {" in content:
-                content = content.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true")
-            else:
-                compile_options = """    compileOptions {
-        coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-"""
-                content = content.replace("buildTypes {", compile_options + "buildTypes {")
-
-        desugar_dep = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'"
-        if desugar_dep not in content:
-            if "dependencies {" in content:
-                content = content.replace("dependencies {", f"dependencies {{\n    {desugar_dep}")
-            else:
-                content += f"\n\ndependencies {{\n    {desugar_dep}\n}}\n"
-
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched compileSdkVersion 34, desugaring and multiDex in app/build.gradle")
+        print("Patched compileSdkVersion 34 and multiDex in app/build.gradle")
 
     # 4. Copy permanent release keystore to android/app/spor-release.jks
     keystore_src = "keystores/spor-release.jks"
