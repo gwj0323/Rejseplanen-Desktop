@@ -95,6 +95,8 @@ class _TripScreenState extends State<TripScreen> {
     });
 
     final config = Provider.of<AppConfig>(context, listen: false);
+    config.addRecentStation(_origin);
+    config.addRecentStation(_destination);
     final client = RejseplanenApiClient(config);
 
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);

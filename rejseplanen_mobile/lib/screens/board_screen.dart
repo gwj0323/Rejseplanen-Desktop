@@ -193,6 +193,8 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                       final s = await StationPickerModal.show(context,
                           title: I18n.t(context, "board_station"));
                       if (s != null) {
+                        final config = Provider.of<AppConfig>(context, listen: false);
+                        config.addRecentStation(s);
                         setState(() => _currentStation = s);
                         _fetchBoard();
                       }

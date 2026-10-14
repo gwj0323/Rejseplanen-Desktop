@@ -131,7 +131,10 @@ class NotificationService {
       if (androidPlugin != null) {
         await androidPlugin.requestNotificationsPermission();
         try {
-          await androidPlugin.requestExactAlarmsPermission();
+          final canExact = await androidPlugin.canScheduleExactAlarms() ?? false;
+          if (!canExact) {
+            await androidPlugin.requestExactAlarmsPermission();
+          }
         } catch (_) {}
 
         if (status.isGranted) return true;
@@ -160,13 +163,14 @@ class NotificationService {
         channelName,
         channelDescription: channelDescription,
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
-        category: AndroidNotificationCategory.reminder,
+        category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         fullScreenIntent: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -435,18 +439,37 @@ class NotificationService {
         channelName,
         channelDescription: channelDescription,
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
         icon: '@mipmap/ic_launcher',
-        category: AndroidNotificationCategory.reminder,
+        category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         fullScreenIntent: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails details = NotificationDetails(android: androidDetails);
 
-      // Attempt exact schedule first (for punctual alarms), fallback to inexact if permission denied
+      // 1. Attempt alarmClock schedule first (highest priority on Android, bypasses Doze & OEM freezes)
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.alarmClock,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          payload: payload,
+        );
+        debugPrint('[NotificationService] Scheduled notification $id (alarmClock) at $tzTime (in ${durationFromNow.inMinutes}m ${durationFromNow.inSeconds % 60}s)');
+        return;
+      } catch (alarmErr) {
+        debugPrint('[NotificationService] alarmClock failed ($alarmErr), falling back to exactAllowWhileIdle');
+      }
+
+      // 2. Fallback to exactAllowWhileIdle
       try {
         await _notificationsPlugin.zonedSchedule(
           id,
@@ -458,21 +481,24 @@ class NotificationService {
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           payload: payload,
         );
-        debugPrint('[NotificationService] Scheduled notification $id (exact) at $tzTime (in ${durationFromNow.inMinutes}m ${durationFromNow.inSeconds % 60}s)');
+        debugPrint('[NotificationService] Scheduled notification $id (exactAllowWhileIdle) at $tzTime');
+        return;
       } catch (exactErr) {
         debugPrint('[NotificationService] exactAllowWhileIdle failed ($exactErr), falling back to inexactAllowWhileIdle');
-        await _notificationsPlugin.zonedSchedule(
-          id,
-          title,
-          body,
-          tzTime,
-          details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-          payload: payload,
-        );
-        debugPrint('[NotificationService] Scheduled notification $id (inexact fallback) at $tzTime');
       }
+
+      // 3. Fallback to inexactAllowWhileIdle
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzTime,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+      debugPrint('[NotificationService] Scheduled notification $id (inexact fallback) at $tzTime');
     } catch (e) {
       debugPrint('[NotificationService] Error scheduling notification $id: $e');
     }

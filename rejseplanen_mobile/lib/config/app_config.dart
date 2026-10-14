@@ -6,8 +6,8 @@ import '../models/station.dart';
 import '../models/trip.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.0.3';
-  static const int appBuildNumber = 4;
+  static const String appVersion = '1.0.4';
+  static const int appBuildNumber = 5;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
@@ -40,12 +40,14 @@ class AppConfig extends ChangeNotifier {
   ];
 
   List<String> _recentSearches = [];
+  List<Station> _recentStations = [];
 
   // Getters
   String get apiKey => _apiKey;
   String get baseUrl => _baseUrl;
   bool get mockFallback => _mockFallback;
   String get language => _language;
+  List<Station> get recentStations => _recentStations;
 
   /// Effective language code ('zh_CN', 'en_US', 'da_DK') resolving 'system' to device locale
   String get effectiveLanguage {
@@ -166,8 +168,19 @@ class AppConfig extends ChangeNotifier {
           }).toList();
         }
 
+        if (data['recent_stations'] != null) {
+          _recentStations = (data['recent_stations'] as List)
+              .map((s) => Station.fromJson(Map<String, dynamic>.from(s)))
+              .toList();
+        }
+
         if (data['recent_searches'] != null) {
           _recentSearches = List<String>.from(data['recent_searches']);
+          if (_recentStations.isEmpty) {
+            _recentStations = _recentSearches
+                .map((name) => Station(id: name, name: name))
+                .toList();
+          }
         }
       } else {
         if (standaloneKey != null) _apiKey = standaloneKey;
@@ -203,6 +216,7 @@ class AppConfig extends ChangeNotifier {
           'origin': t['origin']!.toJson(),
           'dest': t['dest']!.toJson(),
         }).toList(),
+        'recent_stations': _recentStations.map((s) => s.toJson()).toList(),
         'recent_searches': _recentSearches,
       };
       await prefs.setString(_keySettings, jsonEncode(data));
@@ -280,19 +294,43 @@ class AppConfig extends ChangeNotifier {
     }
   }
 
-  void addRecentSearch(String query) {
-    query = query.trim();
-    if (query.isEmpty) return;
-    _recentSearches.remove(query);
-    _recentSearches.insert(0, query);
+  void addRecentStation(Station station) {
+    if (station.name.trim().isEmpty) return;
+    _recentStations.removeWhere((s) =>
+        s.id == station.id || s.name.trim().toLowerCase() == station.name.trim().toLowerCase());
+    _recentStations.insert(0, station);
+    if (_recentStations.length > 20) {
+      _recentStations = _recentStations.sublist(0, 20);
+    }
+
+    _recentSearches.removeWhere(
+        (name) => name.trim().toLowerCase() == station.name.trim().toLowerCase());
+    _recentSearches.insert(0, station.name);
     if (_recentSearches.length > 20) {
       _recentSearches = _recentSearches.sublist(0, 20);
     }
     saveSettings();
   }
 
-  void clearRecentSearches() {
+  void removeRecentStation(String stationId) {
+    _recentStations.removeWhere((s) => s.id == stationId || s.name == stationId);
+    _recentSearches.removeWhere((name) => name == stationId);
+    saveSettings();
+  }
+
+  void clearRecentStations() {
+    _recentStations.clear();
     _recentSearches.clear();
     saveSettings();
+  }
+
+  void addRecentSearch(String query) {
+    query = query.trim();
+    if (query.isEmpty) return;
+    addRecentStation(Station(id: query, name: query));
+  }
+
+  void clearRecentSearches() {
+    clearRecentStations();
   }
 }

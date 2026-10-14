@@ -111,7 +111,7 @@ class FavoritesScreen extends StatelessWidget {
   }
 
   Widget _buildHistoryList(BuildContext context, AppConfig config) {
-    if (config.recentSearches.isEmpty) {
+    if (config.recentStations.isEmpty) {
       return Center(
         child: Text(
           I18n.t(context, "fav_history_empty"),
@@ -130,24 +130,32 @@ class FavoritesScreen extends StatelessWidget {
               TextButton.icon(
                 icon: const Icon(Icons.clear_all, size: 18),
                 label: Text(I18n.t(context, "fav_clear_history")),
-                onPressed: () => config.clearRecentSearches(),
+                onPressed: () => config.clearRecentStations(),
               ),
             ],
           ),
         ),
         Expanded(
           child: ListView.separated(
-            itemCount: config.recentSearches.length,
+            itemCount: config.recentStations.length,
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (ctx, i) {
-              final query = config.recentSearches[i];
+              final station = config.recentStations[i];
               return ListTile(
-                leading: const Icon(Icons.history, color: Colors.grey),
-                title: Text(query),
+                leading: const Icon(Icons.history, color: Colors.blueGrey),
+                title: Text(station.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  station.desc ?? (station.distance != null ? "${station.distance} m" : "ID: ${station.id}"),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                  onPressed: () => config.removeRecentStation(station.id),
+                ),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => BoardScreen(initialStation: Station(id: query, name: query)),
+                      builder: (_) => BoardScreen(initialStation: station),
                     ),
                   );
                 },

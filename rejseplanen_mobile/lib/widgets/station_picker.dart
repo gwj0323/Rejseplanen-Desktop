@@ -26,7 +26,8 @@ class StationPickerModal extends StatefulWidget {
 
 class _StationPickerModalState extends State<StationPickerModal> {
   final TextEditingController _searchCtrl = TextEditingController();
-  List<Station> _results = [];
+  List<Station> _suggestedResults = [];
+  List<Station> _searchResults = [];
   bool _loading = false;
   bool _locatingGps = false;
 
@@ -50,7 +51,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
     client.searchLocations("").then((res) {
       if (mounted) {
         setState(() {
-          _results = res.data;
+          _suggestedResults = res.data;
         });
       }
     });
@@ -59,7 +60,10 @@ class _StationPickerModalState extends State<StationPickerModal> {
   void _onSearchChanged() {
     final q = _searchCtrl.text.trim();
     if (q.isEmpty) {
-      _loadInitialSuggestions();
+      setState(() {
+        _searchResults = [];
+        _loading = false;
+      });
       return;
     }
     setState(() => _loading = true);
@@ -67,7 +71,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
     client.searchLocations(q).then((res) {
       if (mounted) {
         setState(() {
-          _results = res.data;
+          _searchResults = res.data;
           _loading = false;
         });
       }
@@ -84,7 +88,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
       final res = await client.nearbyStops(loc.lat!, loc.lon!, maxNo: 15);
       if (mounted) {
         setState(() {
-          _results = res.data;
+          _suggestedResults = res.data;
           _locatingGps = false;
         });
         if (!LocationService.isInDenmark(loc.lat!, loc.lon!)) {
@@ -110,13 +114,33 @@ class _StationPickerModalState extends State<StationPickerModal> {
     }
   }
 
+  void _selectStation(AppConfig config, Station station) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    config.addRecentStation(station);
+    Navigator.of(context).pop(station);
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = Provider.of<AppConfig>(context);
     final theme = Theme.of(context);
+    final query = _searchCtrl.text.trim();
+    final bool isSearching = query.isNotEmpty;
+
+    // Filter matching history when query is non-empty
+    final matchingHistory = isSearching
+        ? config.recentStations
+            .where((s) => s.name.toLowerCase().contains(query.toLowerCase()))
+            .toList()
+        : <Station>[];
+
+    // Filter API results so we don't duplicate items already in matchingHistory
+    final filteredSearchResults = _searchResults.where((s) {
+      return !matchingHistory.any((h) => h.id == s.id || h.name.toLowerCase() == s.name.toLowerCase());
+    }).toList();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -133,6 +157,8 @@ class _StationPickerModalState extends State<StationPickerModal> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+
+          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -152,6 +178,8 @@ class _StationPickerModalState extends State<StationPickerModal> {
               ],
             ),
           ),
+
+          // Search Box
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: TextField(
@@ -178,7 +206,7 @@ class _StationPickerModalState extends State<StationPickerModal> {
 
           // Quick Action Row: GPS Location & Favorites
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: SizedBox(
               height: 38,
               child: ListView(
@@ -202,21 +230,13 @@ class _StationPickerModalState extends State<StationPickerModal> {
                     onPressed: _locatingGps ? null : _fetchNearbyByGps,
                   ),
                   const SizedBox(width: 8),
+
+                  // Favorite Stations
                   for (var s in config.favoriteStations) ...[
                     ActionChip(
-                      avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
+                      avatar: const Icon(Icons.star, size: 15, color: Colors.amber),
                       label: Text(s.name, style: const TextStyle(fontSize: 12)),
-                      onPressed: () => Navigator.of(context).pop(s),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  for (var q in config.recentSearches) ...[
-                    ActionChip(
-                      avatar: const Icon(Icons.history, size: 14, color: Colors.grey),
-                      label: Text(q, style: const TextStyle(fontSize: 12)),
-                      onPressed: () {
-                        _searchCtrl.text = q;
-                      },
+                      onPressed: () => _selectStation(config, s),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -227,37 +247,218 @@ class _StationPickerModalState extends State<StationPickerModal> {
 
           if (_loading || _locatingGps)
             const Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
               child: LinearProgressIndicator(),
             ),
 
+          // Main Station List
           Expanded(
-            child: ListView.separated(
-              itemCount: _results.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
-              itemBuilder: (ctx, i) {
-                final s = _results[i];
-                return ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFE2E8F0),
-                    child: Icon(Icons.train, color: Color(0xFF0F172A), size: 20),
-                  ),
-                  title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(
-                    s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                  onTap: () {
-                    FocusManager.instance.primaryFocus?.unfocus();
-                    config.addRecentSearch(s.name);
-                    Navigator.of(context).pop(s);
-                  },
-                );
-              },
-            ),
+            child: isSearching
+                ? _buildSearchResults(context, config, matchingHistory, filteredSearchResults)
+                : _buildIdleStationList(context, config),
           ),
         ],
       ),
+    );
+  }
+
+  /// View shown when search query is empty: History at top, followed by suggestions
+  Widget _buildIdleStationList(BuildContext context, AppConfig config) {
+    final theme = Theme.of(context);
+    final recentList = config.recentStations;
+    final suggestedList = _suggestedResults;
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        // 1. Recent Search History Section
+        if (recentList.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.history, size: 18, color: Colors.blueGrey),
+                const SizedBox(width: 6),
+                Text(
+                  I18n.t(context, "station_recent_searches"),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey.shade800,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => config.clearRecentStations(),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    I18n.t(context, "station_clear_recent"),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var s in recentList)
+            ListTile(
+              dense: true,
+              leading: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue.shade50,
+                child: Icon(Icons.history, color: Colors.blue.shade700, size: 16),
+              ),
+              title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                s.desc ?? (s.distance != null ? "${s.distance} m" : I18n.t(context, "station_recent_searches")),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                tooltip: I18n.t(context, "station_clear_recent"),
+                onPressed: () => config.removeRecentStation(s.id),
+              ),
+              onTap: () => _selectStation(config, s),
+            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Divider(height: 1),
+          ),
+        ],
+
+        // 2. Suggested Stations Section
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Row(
+            children: [
+              Icon(Icons.explore_outlined, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                I18n.t(context, "station_suggested"),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (suggestedList.isEmpty && !_loading)
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Center(
+              child: Text(
+                I18n.t(context, "station_history_empty"),
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          )
+        else
+          for (var s in suggestedList)
+            ListTile(
+              dense: true,
+              leading: CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFFF1F5F9),
+                child: const Icon(Icons.train, color: Color(0xFF475569), size: 16),
+              ),
+              title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+              ),
+              onTap: () => _selectStation(config, s),
+            ),
+      ],
+    );
+  }
+
+  /// View shown when actively searching: History matches first, then live API results
+  Widget _buildSearchResults(
+    BuildContext context,
+    AppConfig config,
+    List<Station> matchingHistory,
+    List<Station> apiResults,
+  ) {
+    final theme = Theme.of(context);
+
+    if (matchingHistory.isEmpty && apiResults.isEmpty && !_loading) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              I18n.t(context, "station_empty_nearby"),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        // Matching history results
+        if (matchingHistory.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.history, size: 16, color: Colors.blue),
+                const SizedBox(width: 6),
+                Text(
+                  I18n.t(context, "station_recent_searches"),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var s in matchingHistory)
+            ListTile(
+              dense: true,
+              leading: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue.shade50,
+                child: Icon(Icons.history, color: Colors.blue.shade700, size: 16),
+              ),
+              title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                s.desc ?? I18n.t(context, "station_recent_searches"),
+                style: TextStyle(color: Colors.blue.shade700, fontSize: 11),
+              ),
+              onTap: () => _selectStation(config, s),
+            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Divider(height: 1),
+          ),
+        ],
+
+        // API search results
+        for (var s in apiResults)
+          ListTile(
+            dense: true,
+            leading: const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFFF1F5F9),
+              child: Icon(Icons.train, color: Color(0xFF0F172A), size: 16),
+            ),
+            title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(
+              s.desc ?? (s.distance != null ? "${s.distance} m" : "ID: ${s.id}"),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+            ),
+            onTap: () => _selectStation(config, s),
+          ),
+      ],
     );
   }
 }

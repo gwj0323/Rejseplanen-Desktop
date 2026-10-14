@@ -403,7 +403,30 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+
+            // Battery Optimization / Background Notification Hint
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.battery_alert_outlined, size: 16, color: Colors.orange.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      I18n.t(context, "reminder_battery_tips"),
+                      style: TextStyle(fontSize: 11, color: Colors.orange.shade900, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             // Bottom Action Buttons
             Row(

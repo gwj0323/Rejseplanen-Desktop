@@ -47,10 +47,9 @@ class _StationScreenState extends State<StationScreen> {
       setState(() => _searchResults = []);
       return;
     }
-    final config = Provider.of<AppConfig>(context, listen: false);
-    config.addRecentSearch(query);
 
     setState(() => _searching = true);
+    final config = Provider.of<AppConfig>(context, listen: false);
     final client = RejseplanenApiClient(config);
     client.searchLocations(query).then((res) {
       if (mounted) {
@@ -209,13 +208,13 @@ class _StationScreenState extends State<StationScreen> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  for (var query in config.recentSearches)
+                  for (var s in config.recentStations)
                     ActionChip(
                       avatar: const Icon(Icons.history, size: 14, color: Colors.grey),
-                      label: Text(query, style: const TextStyle(fontSize: 12)),
+                      label: Text(s.name, style: const TextStyle(fontSize: 12)),
                       onPressed: () {
-                        _searchCtrl.text = query;
-                        _onSearch(query);
+                        _searchCtrl.text = s.name;
+                        _onSearch(s.name);
                       },
                     ),
                 ],
@@ -499,7 +498,7 @@ class _StationScreenState extends State<StationScreen> {
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       ),
       onTap: () {
-        config.addRecentSearch(station.name);
+        config.addRecentStation(station);
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => BoardScreen(initialStation: station)),
         );
@@ -524,7 +523,7 @@ class _StationScreenState extends State<StationScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (val) {
-              config.addRecentSearch(station.name);
+              config.addRecentStation(station);
               if (val == 'board') {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => BoardScreen(initialStation: station)),

@@ -108,6 +108,9 @@ class I18n {
       "trip_calendar_open_settings": "前往设置",
       "station_recent_searches": "最近搜索",
       "station_clear_recent": "清空",
+      "station_suggested": "热门推荐",
+      "station_history_empty": "暂无搜索历史",
+      "reminder_battery_tips": "提示：若锁屏或后台收不到通知，请在系统设置中将应用的省电策略设为「无限制」，并允许「闹钟与自启动」。",
 
       // Journey Detail & Stops
       "trip_view_stops": "查看途经站点",
@@ -359,6 +362,9 @@ class I18n {
       "trip_calendar_open_settings": "Open Settings",
       "station_recent_searches": "Recent Searches",
       "station_clear_recent": "Clear",
+      "station_suggested": "Suggested Stations",
+      "station_history_empty": "No search history",
+      "reminder_battery_tips": "Tip: If notifications do not pop up in background, set battery optimization for Spor to 'Unrestricted' and allow 'Alarms & Reminders'.",
 
       // Journey Detail & Stops
       "trip_view_stops": "View stops",
@@ -610,6 +616,9 @@ class I18n {
       "trip_calendar_open_settings": "Åbn indstillinger",
       "station_recent_searches": "Seneste søgninger",
       "station_clear_recent": "Ryd",
+      "station_suggested": "Anbefalede stationer",
+      "station_history_empty": "Ingen søgehistorik",
+      "reminder_battery_tips": "Tip: Hvis du ikke modtager notifikationer i baggrunden, skal du slå batterioptimering fra for Spor i systemindstillinger og tillade alarmer.",
 
       // Journey Detail & Stops
       "trip_view_stops": "Se stop undervejs",
