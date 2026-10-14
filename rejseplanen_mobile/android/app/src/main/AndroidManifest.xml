@@ -31,6 +31,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:enableOnBackInvokedCallback="true"
         android:allowBackup="false">
 
         <!-- Required for scheduled notifications in flutter_local_notifications -->

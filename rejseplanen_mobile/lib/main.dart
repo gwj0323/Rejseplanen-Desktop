@@ -66,6 +66,12 @@ class SporApp extends StatelessWidget {
               backgroundColor: lightColorScheme.surface,
               foregroundColor: lightColorScheme.onSurface,
             ),
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              },
+            ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
@@ -79,6 +85,12 @@ class SporApp extends StatelessWidget {
               scrolledUnderElevation: 2,
               backgroundColor: darkColorScheme.surface,
               foregroundColor: darkColorScheme.onSurface,
+            ),
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              },
             ),
           ),
           home: const MainNavigation(),

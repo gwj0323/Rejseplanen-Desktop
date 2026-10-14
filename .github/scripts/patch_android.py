@@ -59,6 +59,14 @@ def patch():
                 content,
                 count=1,
             )
+        # Enable Android Predictive Back gesture (Android 13/14+)
+        if "android:enableOnBackInvokedCallback" not in content:
+            content = re.sub(
+                r"<application\b",
+                '<application android:enableOnBackInvokedCallback="true"',
+                content,
+                count=1,
+            )
         if "ScheduledNotificationReceiver" not in content:
             content = content.replace("<activity", receivers + "        <activity")
         content = re.sub(r'android:label="[^"]*"', 'android:label="Spor"', content)

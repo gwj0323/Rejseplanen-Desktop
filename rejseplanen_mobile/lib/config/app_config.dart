@@ -6,8 +6,8 @@ import '../models/station.dart';
 import '../models/trip.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.0.9';
-  static const int appBuildNumber = 10;
+  static const String appVersion = '1.0.10';
+  static const int appBuildNumber = 11;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';

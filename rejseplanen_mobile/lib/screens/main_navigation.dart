@@ -31,15 +31,24 @@ class _MainNavigationState extends State<MainNavigation> {
     final config = Provider.of<AppConfig>(context);
     final isLiquidGlass = config.navBarStyle != 'material3';
 
-    return Scaffold(
-      extendBody: isLiquidGlass,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        }
+      },
+      child: Scaffold(
+        extendBody: isLiquidGlass,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: isLiquidGlass
+            ? _buildLiquidGlassBar(context)
+            : _buildMaterial3Bar(context),
       ),
-      bottomNavigationBar: isLiquidGlass
-          ? _buildLiquidGlassBar(context)
-          : _buildMaterial3Bar(context),
     );
   }
 

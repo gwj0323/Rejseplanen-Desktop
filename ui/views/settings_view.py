@@ -210,7 +210,7 @@ class SettingsView(QWidget):
         self.about_author.setStyleSheet("color: gray;")
         about_layout.addWidget(self.about_author)
         
-        ver_lbl = CaptionLabel("Version 1.0.9 | Rejseplanen API 2.0")
+        ver_lbl = CaptionLabel("Version 1.0.10 | Rejseplanen API 2.0")
         ver_lbl.setStyleSheet("color: #0078D4;")
         about_layout.addWidget(ver_lbl)
         
