@@ -255,8 +255,9 @@ class _StationScreenState extends State<StationScreen> {
             const Divider(height: 24),
           ],
 
-          // Permission warning card if denied forever
-          if (_lastLocationResult?.isPermissionDeniedForever == true)
+          if (_searchResults.isEmpty) ...[
+            // Permission warning card if denied forever
+            if (_lastLocationResult?.isPermissionDeniedForever == true)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Card(
@@ -477,6 +478,7 @@ class _StationScreenState extends State<StationScreen> {
             ),
 
           for (var station in _nearbyResults) _buildStationTile(context, station, config),
+          ],
         ],
       ),
     );

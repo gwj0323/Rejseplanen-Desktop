@@ -195,6 +195,8 @@ class _StationPickerModalState extends State<StationPickerModal> {
             child: TextField(
               controller: _searchCtrl,
               autofocus: false,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _onSearchChanged(),
               decoration: InputDecoration(
                 hintText: I18n.t(context, "station_search_placeholder"),
                 prefixIcon: const Icon(Icons.search),
