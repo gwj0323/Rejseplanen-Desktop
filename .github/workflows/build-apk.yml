@@ -45,7 +45,7 @@ jobs:
         working-directory: rejseplanen_mobile
         run: |
           rm -rf android
-          flutter create . --platforms=android --org com.spor
+          flutter create . --platforms=android --org com.spor --project-name mobile
           python3 ../.github/scripts/patch_android.py
 
       - name: Install dependencies

@@ -39,7 +39,7 @@ jobs:
         working-directory: rejseplanen_mobile
         run: |
           rm -rf ios
-          flutter create . --platforms=ios --org com.spor
+          flutter create . --platforms=ios --org com.spor --project-name mobile
           python3 ../.github/scripts/patch_ios.py
 
       - name: Install dependencies

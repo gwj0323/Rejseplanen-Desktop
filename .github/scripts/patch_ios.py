@@ -75,5 +75,19 @@ def patch():
                 shutil.copy2(src_file, dst_file)
         print("Copied custom Spor iOS app icons to ios/Runner/Assets.xcassets/AppIcon.appiconset")
 
+    # 4. Enforce PRODUCT_BUNDLE_IDENTIFIER in project.pbxproj to com.spor.mobile
+    pbxproj_path = "ios/Runner.xcodeproj/project.pbxproj"
+    if os.path.exists(pbxproj_path):
+        with open(pbxproj_path, "r", encoding="utf-8") as f:
+            pbx_content = f.read()
+        pbx_content = re.sub(
+            r'PRODUCT_BUNDLE_IDENTIFIER\s*=\s*[^;]+;',
+            'PRODUCT_BUNDLE_IDENTIFIER = com.spor.mobile;',
+            pbx_content
+        )
+        with open(pbxproj_path, "w", encoding="utf-8") as f:
+            f.write(pbx_content)
+        print("Patched PRODUCT_BUNDLE_IDENTIFIER to com.spor.mobile in project.pbxproj")
+
 if __name__ == "__main__":
     patch()

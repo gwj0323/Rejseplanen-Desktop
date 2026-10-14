@@ -66,6 +66,7 @@ def patch():
             )
         if "ScheduledNotificationReceiver" not in content:
             content = content.replace("<activity", receivers + "        <activity")
+        content = re.sub(r'package="[^"]*"', 'package="com.spor.mobile"', content)
         content = re.sub(r'android:label="[^"]*"', 'android:label="Spor"', content)
         if "android:roundIcon" not in content:
             content = content.replace(
@@ -113,15 +114,19 @@ def patch():
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
             content = f.read()
-        content = re.sub(r"compileSdk(?:Version)?\s*=?\s*\d+", "compileSdkVersion 34", content)
-        content = re.sub(r"targetSdk(?:Version)?\s*=?\s*\d+", "targetSdkVersion 34", content)
+        content = re.sub(r'compileSdk(?:Version)?\s*=?\s*\d+', "compileSdkVersion 34", content)
+        content = re.sub(r'targetSdk(?:Version)?\s*=?\s*\d+', "targetSdkVersion 34", content)
+
+        # Enforce com.spor.mobile namespace and applicationId
+        content = re.sub(r'namespace\s*=?\s*["\'][^"\']+["\']', 'namespace "com.spor.mobile"', content)
+        content = re.sub(r'applicationId\s*=?\s*["\'][^"\']+["\']', 'applicationId "com.spor.mobile"', content)
 
         if "multiDexEnabled" not in content and "defaultConfig {" in content:
             content = content.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
 
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched compileSdkVersion 34 and multiDex in app/build.gradle")
+        print("Patched compileSdkVersion 34, applicationId com.spor.mobile and multiDex in app/build.gradle")
 
     # 4. Copy permanent release keystore to android/app/spor-release.jks
     keystore_src = "keystores/spor-release.jks"
@@ -162,6 +167,23 @@ def patch():
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
         print("Patched release signing config in app/build.gradle")
+
+    # 6. Enforce MainActivity.kt with package com.spor.mobile
+    kotlin_base = "android/app/src/main/kotlin"
+    target_kt_dir = os.path.join(kotlin_base, "com", "spor", "mobile")
+    os.makedirs(target_kt_dir, exist_ok=True)
+    target_kt_file = os.path.join(target_kt_dir, "MainActivity.kt")
+    with open(target_kt_file, "w", encoding="utf-8") as f:
+        f.write("package com.spor.mobile\n\nimport io.flutter.embedding.android.FlutterActivity\n\nclass MainActivity: FlutterActivity() {\n}\n")
+    print(f"Created {target_kt_file} with package com.spor.mobile")
+
+    # Remove any stray directories in kotlin folder not matching com/spor/mobile
+    for root, dirs, files in os.walk(kotlin_base, topdown=False):
+        for d in dirs:
+            dir_path = os.path.join(root, d)
+            rel = os.path.relpath(dir_path, kotlin_base).replace("\\", "/")
+            if not ("com".startswith(rel) or "com/spor".startswith(rel) or rel == "com/spor/mobile"):
+                shutil.rmtree(dir_path, ignore_errors=True)
 
 if __name__ == "__main__":
     patch()
