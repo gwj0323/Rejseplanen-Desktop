@@ -231,6 +231,14 @@ class I18n {
       "settings_about_group": "关于",
       "settings_about_desc": "Spor - 丹麦公共出行客户端 (Flutter 移动版)",
       "settings_about_author": "作者: gwj0323",
+      "settings_check_update": "检查更新",
+      "settings_checking_update": "正在检查更新...",
+      "settings_already_latest": "当前已是最新版本 (v{version})",
+      "settings_update_found": "发现新版本",
+      "settings_download_update": "立即下载更新",
+      "settings_update_failed": "检查更新失败，请稍后重试",
+      "settings_tap_to_check": "点击可检查更新",
+      "common_later": "稍后",
       "settings_saved_msg": "设置已保存",
 
       // Common
@@ -474,6 +482,14 @@ class I18n {
       "settings_about_group": "About",
       "settings_about_desc": "Spor - Denmark Transit Companion (Flutter Mobile)",
       "settings_about_author": "Author: gwj0323",
+      "settings_check_update": "Check for Updates",
+      "settings_checking_update": "Checking for updates...",
+      "settings_already_latest": "Already on the latest version (v{version})",
+      "settings_update_found": "New Version Available",
+      "settings_download_update": "Download Update",
+      "settings_update_failed": "Update check failed, please try again later",
+      "settings_tap_to_check": "Tap to check for updates",
+      "common_later": "Later",
       "settings_saved_msg": "Settings saved",
 
       // Common
@@ -717,6 +733,14 @@ class I18n {
       "settings_about_group": "Om",
       "settings_about_desc": "Spor app til kollektiv trafik i Danmark (Flutter Mobile).",
       "settings_about_author": "Forfatter: gwj0323",
+      "settings_check_update": "Tjek for opdateringer",
+      "settings_checking_update": "Tjekker for opdateringer...",
+      "settings_already_latest": "Du har allerede den nyeste version (v{version})",
+      "settings_update_found": "Ny version tilgængelig",
+      "settings_download_update": "Hent opdatering",
+      "settings_update_failed": "Kunne ikke tjekke for opdateringer, prøv igen senere",
+      "settings_tap_to_check": "Tryk for at tjekke opdateringer",
+      "common_later": "Senere",
       "settings_saved_msg": "Gemt",
 
       // Common

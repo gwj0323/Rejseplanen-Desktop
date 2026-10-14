@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../services/api_client.dart';
+import '../services/update_service.dart';
 import '../i18n/translations.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _hexCtrl;
   bool _obscureKey = true;
   bool _testing = false;
+  bool _checkingUpdate = false;
   String? _testResult;
   bool? _testSuccess;
 
@@ -86,6 +88,127 @@ class _SettingsScreenState extends State<SettingsScreen> {
         config.setApiKey(_keyCtrl.text);
         config.setBaseUrl(_urlCtrl.text);
       }
+    }
+  }
+
+  Future<void> _handleCheckUpdate() async {
+    if (_checkingUpdate) return;
+    setState(() => _checkingUpdate = true);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Text(I18n.t(context, "settings_checking_update")),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    final res = await UpdateService.checkUpdate();
+    if (!mounted) return;
+    setState(() => _checkingUpdate = false);
+
+    if (res.success && res.release != null) {
+      final rel = res.release!;
+      if (rel.hasUpdate) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.system_update, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(I18n.t(context, "settings_update_found")),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rel.name.isNotEmpty ? rel.name : "Version ${rel.cleanVersion}",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 8),
+                  if (rel.body.trim().isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        rel.body.trim(),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(I18n.t(context, "common_later")),
+              ),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  final downloadUrl = rel.apkDownloadUrl ?? rel.ipaDownloadUrl ?? rel.htmlUrl;
+                  UpdateService.openReleaseUrl(downloadUrl);
+                },
+                icon: const Icon(Icons.download, size: 16),
+                label: Text(I18n.t(context, "settings_download_update")),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.greenAccent),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    I18n.tr(context, "settings_already_latest", {
+                      "version": AppConfig.appVersion,
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.orangeAccent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(I18n.t(context, "settings_update_failed")),
+              ),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -478,31 +601,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Spor",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    I18n.t(context, "settings_about_desc"),
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    I18n.t(context, "settings_about_author"),
-                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "Version 1.0.0 (Flutter Mobile)",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _checkingUpdate ? null : _handleCheckUpdate,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          "Spor",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _checkingUpdate ? null : _handleCheckUpdate,
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          icon: _checkingUpdate
+                              ? const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.sync, size: 15),
+                          label: Text(
+                            I18n.t(context, "settings_check_update"),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      I18n.t(context, "settings_about_desc"),
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      I18n.t(context, "settings_about_author"),
+                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          "Version ${AppConfig.appVersion} (Flutter Mobile)",
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "• ${I18n.t(context, "settings_tap_to_check")}",
+                          style: TextStyle(color: theme.colorScheme.primary.withOpacity(0.8), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
