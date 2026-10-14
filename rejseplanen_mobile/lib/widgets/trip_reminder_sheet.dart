@@ -638,7 +638,11 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
 
   Future<void> _handleCancelReminders(AppConfig config) async {
     final notificationService = NotificationService();
-    await notificationService.cancelTripReminders(widget.trip);
+    await notificationService.cancelTripReminders(
+      widget.trip,
+      origin: widget.origin,
+      destination: widget.destination,
+    );
     config.setTripReminderActive(widget.trip.idx, false);
 
     if (config.isOngoingTripActive(widget.trip.idx)) {

@@ -90,6 +90,22 @@ class RejseplanenApiClient {
     }
   }
 
+  /// Parse an ISO 8601 duration such as 'PT1H30M', 'P1DT2H5M' or 'PT45M'
+  /// into total minutes. Returns 0 for empty or unparseable input.
+  int _parseIsoDurationMinutes(String durationStr) {
+    if (durationStr.isEmpty) return 0;
+    final m = RegExp(
+      r'^P(?!$)(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$',
+      caseSensitive: false,
+    ).firstMatch(durationStr.trim());
+    if (m == null) return 0;
+    final days = int.tryParse(m.group(1) ?? '') ?? 0;
+    final hours = int.tryParse(m.group(2) ?? '') ?? 0;
+    final minutes = int.tryParse(m.group(3) ?? '') ?? 0;
+    final seconds = int.tryParse(m.group(4) ?? '') ?? 0;
+    return days * 1440 + hours * 60 + minutes + (seconds >= 30 ? 1 : 0);
+  }
+
   List<dynamic> _ensureList(dynamic item) {
     if (item == null) return [];
     if (item is List) return item;
@@ -519,7 +535,7 @@ class RejseplanenApiClient {
             name: a["name"]?.toString() ?? prod["name"]?.toString() ?? "Transit",
             type: cat,
             stop: a["stop"]?.toString() ?? "",
-            direction: a["stop"]?.toString() ?? "",
+            direction: a["origin"]?.toString() ?? a["stop"]?.toString() ?? "",
             time: schedTime,
             date: a["date"]?.toString() ?? "",
             rtTime: rtTime,
@@ -679,8 +695,7 @@ class RejseplanenApiClient {
           int durationMin = _parseTimeDiffMin(depTime, arrTime);
 
           if (durationMin == 0 && t["duration"] != null) {
-            final m = RegExp(r'(\d+)M').firstMatch(t["duration"].toString());
-            if (m != null) durationMin = int.parse(m.group(1)!);
+            durationMin = _parseIsoDurationMinutes(t["duration"].toString());
           }
 
           trips.add(TripProposal(
@@ -721,7 +736,12 @@ class RejseplanenApiClient {
       try {
         Uri uri;
         if (refUrlOrParam.startsWith("http://") || refUrlOrParam.startsWith("https://")) {
-          final baseUri = Uri.parse(refUrlOrParam);
+          var baseUri = Uri.parse(refUrlOrParam);
+          // Never send the accessId over cleartext HTTP even if the API
+          // hands out an http:// journeyDetail reference.
+          if (baseUri.scheme == "http") {
+            baseUri = baseUri.replace(scheme: "https");
+          }
           final q = Map<String, String>.from(baseUri.queryParameters);
           q["accessId"] = key;
           q["format"] = "json";
