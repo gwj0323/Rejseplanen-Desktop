@@ -188,13 +188,23 @@ def patch():
             "jvmTarget = '17'",
             content
         )
+        # Enable core library desugaring for flutter_local_notifications
+        if "coreLibraryDesugaringEnabled true" not in content:
+            if "compileOptions {" in content:
+                content = content.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true")
+
+        if "coreLibraryDesugaring" not in content:
+            if "dependencies {" in content:
+                content = content.replace("dependencies {", "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'")
+            else:
+                content += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n"
 
         if "multiDexEnabled" not in content and "defaultConfig {" in content:
             content = content.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
 
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), Java 17 in app/build.gradle")
+        print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), Java 17, desugaring in app/build.gradle")
         print("Verified compileSdk in build.gradle:", re.findall(r'compileSdk[^\r\n]*', content))
         print("Verified targetSdk in build.gradle:", re.findall(r'targetSdk[^\r\n]*', content))
         print("Verified minSdk in build.gradle:", re.findall(r'minSdk[^\r\n]*', content))
