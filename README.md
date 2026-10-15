@@ -3,7 +3,7 @@
 [English](#english) | [中文说明](#中文)
 
 [![Release](https://img.shields.io/github/v/release/gwj0323/spor-app?color=blue)](https://github.com/gwj0323/spor-app/releases)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Build Android APK](https://github.com/gwj0323/spor-app/actions/workflows/build-apk.yml/badge.svg)](https://github.com/gwj0323/spor-app/actions/workflows/build-apk.yml)
 [![Build iOS IPA](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml/badge.svg)](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml)
 
@@ -76,7 +76,7 @@ pyinstaller Rejseplanen.spec
 
 ### License & Attribution
  
-- **Source Code**: Licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE).
+- **Source Code**: Licensed under the [MIT License](LICENSE).
 - **Transit Data**: Public transit schedules, stop locations, and real-time transit information are provided by and property of [Rejseplanen A/S](https://www.rejseplanen.dk/). Use of the API is subject to the terms and conditions of Rejseplanen Labs (personal, non-commercial use).
 
 ---
@@ -150,5 +150,5 @@ pyinstaller Rejseplanen.spec
 
 ### 许可证与数据声明
 
-- **源代码**：遵循 [GNU General Public License v3.0 (GPL-3.0)](LICENSE) 开源协议。
+- **源代码**：遵循 [MIT License](LICENSE) 开源协议。
 - **交通数据**：丹麦全境公共交通时刻表、经停站及实时调度数据版权归 [Rejseplanen A/S](https://www.rejseplanen.dk/) 所有，API 接口使用须遵守 Rejseplanen Labs 官方使用条款（个人非商业用途）。
