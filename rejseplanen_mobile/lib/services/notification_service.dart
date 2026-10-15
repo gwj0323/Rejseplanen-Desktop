@@ -104,28 +104,50 @@ class NotificationService {
     await init();
     try {
       final status = await Permission.notification.status;
-      if (status.isGranted) return true;
+      if (status.isGranted || status.isLimited || status.isProvisional) return true;
 
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
-        return (await androidPlugin.areNotificationsEnabled()) ?? false;
+        final enabled = await androidPlugin.areNotificationsEnabled();
+        if (enabled == true) return true;
       }
+
       return status.isGranted;
     } catch (_) {
       return false;
     }
   }
 
-  /// Request runtime notification permission on Android 13+
+  /// Request runtime notification permission on Android 13+ and iOS
   Future<bool> requestPermission() async {
     await init();
     try {
-      // 1. Request via permission_handler (pops up native Android OS dialog)
-      final status = await Permission.notification.request();
-      debugPrint('[NotificationService] Permission.notification.request() status: $status');
+      bool granted = false;
 
-      // 2. Request notification & exact alarms via flutter_local_notifications plugin
+      // 1. Explicitly request permissions via DarwinFlutterLocalNotificationsPlugin on iOS
+      final darwinPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<DarwinFlutterLocalNotificationsPlugin>();
+      if (darwinPlugin != null) {
+        final bool? darwinGranted = await darwinPlugin.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        debugPrint('[NotificationService] Darwin requestPermissions result: $darwinGranted');
+        if (darwinGranted == true) granted = true;
+      }
+
+      // 2. Request via permission_handler (works across platforms with PERMISSION_NOTIFICATIONS=1)
+      try {
+        final status = await Permission.notification.request();
+        debugPrint('[NotificationService] Permission.notification.request() status: $status');
+        if (status.isGranted || status.isLimited || status.isProvisional) granted = true;
+      } catch (e) {
+        debugPrint('[NotificationService] Permission.notification.request error: $e');
+      }
+
+      // 3. Request notification & exact alarms via flutter_local_notifications plugin on Android
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
@@ -133,16 +155,14 @@ class NotificationService {
         try {
           await androidPlugin.requestExactAlarmsPermission();
         } catch (_) {}
-
-        if (status.isGranted) return true;
-        return (await androidPlugin.areNotificationsEnabled()) ?? false;
+        final bool? androidEnabled = await androidPlugin.areNotificationsEnabled();
+        if (androidEnabled == true) granted = true;
       }
-      return status.isGranted;
+
+      return granted || await areNotificationsEnabled();
     } catch (e) {
       debugPrint('[NotificationService] Request permission error: $e');
-      final androidPlugin = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      return (await androidPlugin?.areNotificationsEnabled()) ?? false;
+      return await areNotificationsEnabled();
     }
   }
 
@@ -168,7 +188,17 @@ class NotificationService {
         visibility: NotificationVisibility.public,
       );
 
-      const NotificationDetails details = NotificationDetails(android: androidDetails);
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
+
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
       await _notificationsPlugin.show(id, title, body, details, payload: payload);
       debugPrint('[NotificationService] Shown instant notification: $title');
     } catch (e) {
@@ -442,7 +472,17 @@ class NotificationService {
         visibility: NotificationVisibility.public,
       );
 
-      const NotificationDetails details = NotificationDetails(android: androidDetails);
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
+
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
       // 1. Attempt alarmClock schedule first (highest priority on Android, bypasses Doze & OEM freezes)
       try {
