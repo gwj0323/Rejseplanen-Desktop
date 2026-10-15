@@ -133,20 +133,6 @@ def patch():
             'id "com.android.application" version "8.7.2"',
             b_content
         )
-        if "subprojects {" in b_content and "namespace == null" not in b_content:
-            b_content += """
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.android {
-                if (namespace == null) {
-                    namespace project.group
-                }
-            }
-        }
-    }
-}
-"""
         with open(build_gradle, "w", encoding="utf-8") as f:
             f.write(b_content)
         print("Patched AGP 8.7.2 and Kotlin 1.9.24 in android/build.gradle")
