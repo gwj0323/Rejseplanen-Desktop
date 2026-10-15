@@ -105,7 +105,7 @@ Spor 是一款开源的丹麦公共交通出行客户端，支持 Android、iOS 
 
 | 平台 | 安装包 | 安装方式 |
 | :--- | :--- | :--- |
-| **Android** | `app-release.apk` | 下载直接安装（需允许安装未知来源应用）。已固化 Release 签名证书，后续更新均可直接覆盖安装。 |
+| **Android** | `app-release.apk` | 下载直接安装（需允许安装未知来源应用）。 |
 | **iOS** | `spor-ios-release.ipa` | 支持通过 [Sideloadly](https://sideloadly.io/)、[AltStore](https://altstore.io/) 或 [TrollStore](https://github.com/opa334/TrollStore) 侧载安装 |
 
 ### API 配置
