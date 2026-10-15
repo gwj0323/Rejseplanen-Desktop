@@ -125,17 +125,17 @@ class NotificationService {
     try {
       bool granted = false;
 
-      // 1. Explicitly request permissions via DarwinFlutterLocalNotificationsPlugin on iOS
-      final darwinPlugin = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<DarwinFlutterLocalNotificationsPlugin>();
-      if (darwinPlugin != null) {
-        final bool? darwinGranted = await darwinPlugin.requestPermissions(
+      // 1. Explicitly request permissions via IOSFlutterLocalNotificationsPlugin on iOS
+      final iosPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      if (iosPlugin != null) {
+        final bool? iosGranted = await iosPlugin.requestPermissions(
           alert: true,
           badge: true,
           sound: true,
         );
-        debugPrint('[NotificationService] Darwin requestPermissions result: $darwinGranted');
-        if (darwinGranted == true) granted = true;
+        debugPrint('[NotificationService] iOS requestPermissions result: $iosGranted');
+        if (iosGranted == true) granted = true;
       }
 
       // 2. Request via permission_handler (works across platforms with PERMISSION_NOTIFICATIONS=1)
