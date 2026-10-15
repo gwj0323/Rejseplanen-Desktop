@@ -22,14 +22,14 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.spor.mobile"
-    compileSdkVersion 34
+    compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
 
     defaultConfig {
         applicationId "com.spor.mobile"
-        minSdkVersion 21
-        targetSdkVersion 34
+        minSdkVersion 32
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true

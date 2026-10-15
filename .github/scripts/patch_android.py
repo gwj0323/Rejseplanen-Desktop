@@ -114,8 +114,9 @@ def patch():
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
             content = f.read()
-        content = re.sub(r'compileSdk(?:Version)?\s*=?\s*\d+', "compileSdkVersion 34", content)
-        content = re.sub(r'targetSdk(?:Version)?\s*=?\s*\d+', "targetSdkVersion 34", content)
+        content = re.sub(r'compileSdk(?:Version)?\s*=?\s*\d+', "compileSdkVersion 36", content)
+        content = re.sub(r'targetSdk(?:Version)?\s*=?\s*\d+', "targetSdkVersion 36", content)
+        content = re.sub(r'minSdk(?:Version)?\s*=?\s*(?:\d+|flutter\.minSdkVersion)', "minSdkVersion 32", content)
 
         # Enforce com.spor.mobile namespace and applicationId
         content = re.sub(r'namespace\s*=?\s*["\'][^"\']+["\']', 'namespace "com.spor.mobile"', content)
@@ -126,7 +127,18 @@ def patch():
 
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched compileSdkVersion 34, applicationId com.spor.mobile and multiDex in app/build.gradle")
+        print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), applicationId com.spor.mobile in app/build.gradle")
+
+    # 3.1 Ensure gradle.properties suppresses unsupported compileSdk warning
+    gradle_props = "android/gradle.properties"
+    if os.path.exists(gradle_props):
+        with open(gradle_props, "r", encoding="utf-8") as f:
+            props = f.read()
+        if "android.suppressUnsupportedCompileSdk" not in props:
+            props += "\nandroid.suppressUnsupportedCompileSdk=36\n"
+            with open(gradle_props, "w", encoding="utf-8") as f:
+                f.write(props)
+        print("Ensured android.suppressUnsupportedCompileSdk=36 in gradle.properties")
 
     # 4. Copy permanent release keystore to android/app/spor-release.jks
     keystore_src = "keystores/spor-release.jks"
