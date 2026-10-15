@@ -44,7 +44,7 @@ jobs:
       - name: Install Android 16 SDK (API 36)
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-36" "build-tools;36.0.0" || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-36" "platforms;android-35" "build-tools;36.0.0" "build-tools;35.0.0" || true
 
       - name: Initialize Android Platform
         working-directory: rejseplanen_mobile

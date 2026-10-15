@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 
 def patch():
     # 1. Add location, internet & notification permissions to AndroidManifest.xml
@@ -78,7 +79,6 @@ def patch():
         print("Patched AndroidManifest.xml with notification permissions, receivers and app label Spor")
 
     # Copy custom launcher icons from assets/android/res
-    import shutil
     assets_res = "assets/android/res"
     dest_res = "android/app/src/main/res"
     if os.path.exists(assets_res) and os.path.exists(dest_res):
@@ -90,26 +90,90 @@ def patch():
                 shutil.copy2(os.path.join(root, f), os.path.join(target_dir, f))
         print("Copied custom Spor launcher icons to android/app/src/main/res")
 
-    # 2. Upgrade Kotlin version to 1.9.22 in build.gradle and settings.gradle
-    for fn in ["android/build.gradle", "android/settings.gradle"]:
-        if os.path.exists(fn):
-            with open(fn, "r", encoding="utf-8") as f:
-                content = f.read()
-            content = re.sub(
-                r"ext\.kotlin_version\s*=\s*['\"][^'\"]+['\"]",
-                "ext.kotlin_version = '1.9.22'",
-                content,
-            )
-            content = re.sub(
-                r'id\s*[\'"]org\.jetbrains\.kotlin\.android[\'"]\s*version\s*[\'"][^\'"]+[\'"]',
-                "id 'org.jetbrains.kotlin.android' version '1.9.22'",
-                content,
-            )
-            with open(fn, "w", encoding="utf-8") as f:
-                f.write(content)
-            print(f"Patched Kotlin version in {fn}")
+    # 2. Upgrade AGP to 8.7.2 and Kotlin version to 1.9.24 in settings.gradle and build.gradle
+    settings_gradle = "android/settings.gradle"
+    if os.path.exists(settings_gradle):
+        with open(settings_gradle, "r", encoding="utf-8") as f:
+            s_content = f.read()
+        s_content = re.sub(
+            r'id\s*[\'"]com\.android\.application[\'"]\s*version\s*[\'"][^\'"]+[\'"]',
+            'id "com.android.application" version "8.7.2"',
+            s_content
+        )
+        s_content = re.sub(
+            r'id\s*[\'"]org\.jetbrains\.kotlin\.android[\'"]\s*version\s*[\'"][^\'"]+[\'"]',
+            'id "org.jetbrains.kotlin.android" version "1.9.24"',
+            s_content
+        )
+        with open(settings_gradle, "w", encoding="utf-8") as f:
+            f.write(s_content)
+        print("Patched AGP 8.7.2 and Kotlin 1.9.24 in android/settings.gradle")
 
-    # 3. Upgrade compileSdkVersion to 34 and enable multiDex in app/build.gradle
+    build_gradle = "android/build.gradle"
+    if os.path.exists(build_gradle):
+        with open(build_gradle, "r", encoding="utf-8") as f:
+            b_content = f.read()
+        b_content = re.sub(
+            r"classpath\s*['\"]com\.android\.tools\.build:gradle:[^'\"]+['\"]",
+            "classpath 'com.android.tools.build:gradle:8.7.2'",
+            b_content
+        )
+        b_content = re.sub(
+            r"ext\.kotlin_version\s*=\s*['\"][^'\"]+['\"]",
+            "ext.kotlin_version = '1.9.24'",
+            b_content
+        )
+        b_content = re.sub(
+            r'id\s*[\'"]org\.jetbrains\.kotlin\.android[\'"]\s*version\s*[\'"][^\'"]+[\'"]',
+            'id "org.jetbrains.kotlin.android" version "1.9.24"',
+            b_content
+        )
+        b_content = re.sub(
+            r'id\s*[\'"]com\.android\.application[\'"]\s*version\s*[\'"][^\'"]+[\'"]',
+            'id "com.android.application" version "8.7.2"',
+            b_content
+        )
+        if "subprojects {" in b_content and "namespace == null" not in b_content:
+            b_content += """
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group
+                }
+            }
+        }
+    }
+}
+"""
+        with open(build_gradle, "w", encoding="utf-8") as f:
+            f.write(b_content)
+        print("Patched AGP 8.7.2 and Kotlin 1.9.24 in android/build.gradle")
+
+    # 3. Upgrade Gradle wrapper to 8.9 (required for AGP 8.7)
+    gw_path = "android/gradle/wrapper/gradle-wrapper.properties"
+    os.makedirs(os.path.dirname(gw_path), exist_ok=True)
+    if os.path.exists(gw_path):
+        with open(gw_path, "r", encoding="utf-8") as f:
+            gw_content = f.read()
+        gw_content = re.sub(
+            r'distributionUrl=.*',
+            r'distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-all.zip',
+            gw_content
+        )
+        with open(gw_path, "w", encoding="utf-8") as f:
+            f.write(gw_content)
+    else:
+        with open(gw_path, "w", encoding="utf-8") as f:
+            f.write("distributionBase=GRADLE_USER_HOME\n"
+                    "distributionPath=wrapper/dists\n"
+                    "zipStoreBase=GRADLE_USER_HOME\n"
+                    "zipStorePath=wrapper/dists\n"
+                    "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.9-all.zip\n")
+    print("Patched gradle-wrapper.properties to Gradle 8.9")
+
+    # 4. Upgrade compileSdkVersion to 36, targetSdkVersion to 36, minSdkVersion to 32 (Android 12L)
     app_gradle = "android/app/build.gradle"
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
@@ -122,28 +186,50 @@ def patch():
         content = re.sub(r'namespace\s*=?\s*["\'][^"\']+["\']', 'namespace "com.spor.mobile"', content)
         content = re.sub(r'applicationId\s*=?\s*["\'][^"\']+["\']', 'applicationId "com.spor.mobile"', content)
 
+        # Upgrade Java & JVM target to 17
+        content = re.sub(
+            r'sourceCompatibility\s*=?\s*JavaVersion\.VERSION_[0-9_]+',
+            'sourceCompatibility = JavaVersion.VERSION_17',
+            content
+        )
+        content = re.sub(
+            r'targetCompatibility\s*=?\s*JavaVersion\.VERSION_[0-9_]+',
+            'targetCompatibility = JavaVersion.VERSION_17',
+            content
+        )
+        content = re.sub(
+            r'jvmTarget\s*=\s*[\'"][^\'"]+[\'"]',
+            "jvmTarget = '17'",
+            content
+        )
+
         if "multiDexEnabled" not in content and "defaultConfig {" in content:
             content = content.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
 
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
-        print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), applicationId com.spor.mobile in app/build.gradle")
+        print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), Java 17 in app/build.gradle")
         print("Verified compileSdk in build.gradle:", re.findall(r'compileSdk[^\r\n]*', content))
         print("Verified targetSdk in build.gradle:", re.findall(r'targetSdk[^\r\n]*', content))
         print("Verified minSdk in build.gradle:", re.findall(r'minSdk[^\r\n]*', content))
 
-    # 3.1 Ensure gradle.properties suppresses unsupported compileSdk warning
+    # 5. Ensure gradle.properties suppresses unsupported compileSdk warning
     gradle_props = "android/gradle.properties"
+    props = ""
     if os.path.exists(gradle_props):
         with open(gradle_props, "r", encoding="utf-8") as f:
             props = f.read()
-        if "android.suppressUnsupportedCompileSdk" not in props:
-            props += "\nandroid.suppressUnsupportedCompileSdk=36\n"
-            with open(gradle_props, "w", encoding="utf-8") as f:
-                f.write(props)
-        print("Ensured android.suppressUnsupportedCompileSdk=36 in gradle.properties")
+    if "android.suppressUnsupportedCompileSdk" not in props:
+        props += "\nandroid.suppressUnsupportedCompileSdk=36\n"
+    else:
+        props = re.sub(r'android\.suppressUnsupportedCompileSdk=.*', 'android.suppressUnsupportedCompileSdk=36', props)
+    if "android.useAndroidX=true" not in props:
+        props += "\nandroid.useAndroidX=true\n"
+    with open(gradle_props, "w", encoding="utf-8") as f:
+        f.write(props)
+    print("Ensured android.suppressUnsupportedCompileSdk=36 in gradle.properties")
 
-    # 3.2 Ensure local.properties defines flutter.compileSdkVersion=36 etc.
+    # 6. Ensure local.properties defines flutter.compileSdkVersion=36 etc.
     local_props = "android/local.properties"
     lp = ""
     if os.path.exists(local_props):
@@ -156,9 +242,9 @@ def patch():
         lp += "\nflutter.compileSdkVersion=36\nflutter.targetSdkVersion=36\nflutter.minSdkVersion=32\n"
     with open(local_props, "w", encoding="utf-8") as f:
         f.write(lp)
-    print("Ensured flutter.compileSdkVersion=36 and targetSdkVersion=36 in local.properties")
+    print("Ensured flutter.compileSdkVersion=36, targetSdkVersion=36, minSdkVersion=32 in local.properties")
 
-    # 4. Copy permanent release keystore to android/app/spor-release.jks
+    # 7. Copy permanent release keystore to android/app/spor-release.jks
     keystore_src = "keystores/spor-release.jks"
     if not os.path.exists(keystore_src) and os.path.exists("../.github/keystores/spor-release.jks"):
         keystore_src = "../.github/keystores/spor-release.jks"
@@ -171,7 +257,7 @@ def patch():
     else:
         print(f"WARNING: Release keystore not found at {keystore_src}!")
 
-    # 5. Patch signingConfigs and buildTypes in app/build.gradle
+    # 8. Patch signingConfigs and buildTypes in app/build.gradle
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
             content = f.read()
@@ -198,7 +284,7 @@ def patch():
             f.write(content)
         print("Patched release signing config in app/build.gradle")
 
-    # 6. Enforce MainActivity.kt with package com.spor.mobile
+    # 9. Enforce MainActivity.kt with package com.spor.mobile
     kotlin_base = "android/app/src/main/kotlin"
     target_kt_dir = os.path.join(kotlin_base, "com", "spor", "mobile")
     os.makedirs(target_kt_dir, exist_ok=True)
@@ -217,4 +303,3 @@ def patch():
 
 if __name__ == "__main__":
     patch()
-
