@@ -114,9 +114,9 @@ def patch():
     if os.path.exists(app_gradle):
         with open(app_gradle, "r", encoding="utf-8") as f:
             content = f.read()
-        content = re.sub(r'compileSdk(?:Version)?\s*=?\s*\d+', "compileSdkVersion 36", content)
-        content = re.sub(r'targetSdk(?:Version)?\s*=?\s*\d+', "targetSdkVersion 36", content)
-        content = re.sub(r'minSdk(?:Version)?\s*=?\s*(?:\d+|flutter\.minSdkVersion)', "minSdkVersion 32", content)
+        content = re.sub(r'compileSdk(?:Version)?\s*=?\s*[^\r\n]+', "compileSdkVersion 36", content)
+        content = re.sub(r'targetSdk(?:Version)?\s*=?\s*[^\r\n]+', "targetSdkVersion 36", content)
+        content = re.sub(r'minSdk(?:Version)?\s*=?\s*[^\r\n]+', "minSdkVersion 32", content)
 
         # Enforce com.spor.mobile namespace and applicationId
         content = re.sub(r'namespace\s*=?\s*["\'][^"\']+["\']', 'namespace "com.spor.mobile"', content)
@@ -128,6 +128,9 @@ def patch():
         with open(app_gradle, "w", encoding="utf-8") as f:
             f.write(content)
         print("Patched compileSdkVersion 36, targetSdkVersion 36, minSdkVersion 32 (Android 12L), applicationId com.spor.mobile in app/build.gradle")
+        print("Verified compileSdk in build.gradle:", re.findall(r'compileSdk[^\r\n]*', content))
+        print("Verified targetSdk in build.gradle:", re.findall(r'targetSdk[^\r\n]*', content))
+        print("Verified minSdk in build.gradle:", re.findall(r'minSdk[^\r\n]*', content))
 
     # 3.1 Ensure gradle.properties suppresses unsupported compileSdk warning
     gradle_props = "android/gradle.properties"
@@ -139,6 +142,21 @@ def patch():
             with open(gradle_props, "w", encoding="utf-8") as f:
                 f.write(props)
         print("Ensured android.suppressUnsupportedCompileSdk=36 in gradle.properties")
+
+    # 3.2 Ensure local.properties defines flutter.compileSdkVersion=36 etc.
+    local_props = "android/local.properties"
+    lp = ""
+    if os.path.exists(local_props):
+        with open(local_props, "r", encoding="utf-8") as f:
+            lp = f.read()
+    lp = re.sub(r'flutter\.compileSdkVersion=.*', 'flutter.compileSdkVersion=36', lp)
+    lp = re.sub(r'flutter\.targetSdkVersion=.*', 'flutter.targetSdkVersion=36', lp)
+    lp = re.sub(r'flutter\.minSdkVersion=.*', 'flutter.minSdkVersion=32', lp)
+    if 'flutter.compileSdkVersion' not in lp:
+        lp += "\nflutter.compileSdkVersion=36\nflutter.targetSdkVersion=36\nflutter.minSdkVersion=32\n"
+    with open(local_props, "w", encoding="utf-8") as f:
+        f.write(lp)
+    print("Ensured flutter.compileSdkVersion=36 and targetSdkVersion=36 in local.properties")
 
     # 4. Copy permanent release keystore to android/app/spor-release.jks
     keystore_src = "keystores/spor-release.jks"
