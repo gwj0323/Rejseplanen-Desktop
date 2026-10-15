@@ -7,7 +7,7 @@ import '../models/trip.dart';
 
 class AppConfig extends ChangeNotifier {
   static const String appVersion = '1.0.11';
-  static const int appBuildNumber = 15;
+  static const int appBuildNumber = 16;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';

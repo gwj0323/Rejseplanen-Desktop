@@ -741,44 +741,47 @@ class RejseplanenApiClient {
     final key = config.apiKey.trim();
     String? fetchError;
 
-    if (key.isNotEmpty && refUrlOrParam.isNotEmpty && !refUrlOrParam.startsWith("mock")) {
+    if (key.isNotEmpty && refUrlOrParam.trim().isNotEmpty && !refUrlOrParam.startsWith("mock")) {
       try {
-        Uri uri;
-        if (refUrlOrParam.startsWith("http://") || refUrlOrParam.startsWith("https://")) {
-          String fullUrl = refUrlOrParam;
-          if (fullUrl.startsWith("http://")) {
-            fullUrl = "https://${fullUrl.substring(7)}";
+        // Extract raw ref string from any format:
+        // 1) Full URL: "https://www.rejseplanen.dk/api/journeyDetail?id=..." or "ref=..."
+        // 2) Partial param: "journeyDetail?ref=..." or "ref=..." or "id=..."
+        // 3) Pure ref token: "2|#VN#1#ST#..."
+        String cleanRef = refUrlOrParam.trim();
+        if (cleanRef.contains("id=")) {
+          final m = RegExp(r'[?&]id=([^&]+)').firstMatch(cleanRef);
+          if (m != null) {
+            cleanRef = m.group(1)!;
           }
-          final hasQuery = fullUrl.contains("?");
-          final sep = hasQuery ? "&" : "?";
-          if (!fullUrl.contains("accessId=")) {
-            fullUrl += "${sep}accessId=${Uri.encodeQueryComponent(key)}";
-          }
-          if (!fullUrl.contains("format=")) {
-            fullUrl += "&format=json";
-          }
-          uri = Uri.parse(fullUrl);
-        } else {
-          String cleanRef = refUrlOrParam;
-          if (cleanRef.startsWith("journeyDetail?ref=")) {
-            cleanRef = cleanRef.substring("journeyDetail?ref=".length);
-          } else if (cleanRef.startsWith("journeyDetail?")) {
-            cleanRef = cleanRef.substring("journeyDetail?".length);
-            final m = RegExp(r'(?:^|&)ref=([^&]+)').firstMatch(cleanRef);
-            if (m != null) {
-              cleanRef = m.group(1)!;
-            }
+        } else if (cleanRef.contains("ref=")) {
+          final m = RegExp(r'[?&]ref=([^&]+)').firstMatch(cleanRef);
+          if (m != null) {
+            cleanRef = m.group(1)!;
           } else if (cleanRef.startsWith("ref=")) {
             cleanRef = cleanRef.substring(4);
           }
-          final base = config.baseUrl.replaceAll(RegExp(r'/+$'), '');
-          uri = Uri.parse("$base/journeyDetail").replace(queryParameters: {
-            "ref": cleanRef,
-            "accessId": key,
-            "format": "json",
-          });
+        } else if (cleanRef.startsWith("journeyDetail?")) {
+          cleanRef = cleanRef.substring("journeyDetail?".length);
         }
 
+        // Decode if it was already percent-encoded so Uri.replace doesn't double-encode
+        try {
+          if (cleanRef.contains("%")) {
+            cleanRef = Uri.decodeQueryComponent(cleanRef);
+          }
+        } catch (_) {}
+
+        final base = config.baseUrl.replaceAll(RegExp(r'/+$'), '');
+        // In Rejseplanen API 2.0, the parameter is "id", while legacy API 1.0 used "ref".
+        // Providing both ensures 100% compatibility across all Rejseplanen backend dialects.
+        final uri = Uri.parse("$base/journeyDetail").replace(queryParameters: {
+          "id": cleanRef,
+          "ref": cleanRef,
+          "accessId": key,
+          "format": "json",
+        });
+
+        debugPrint('[ApiClient] Fetching journeyDetail: $uri');
         final resp = await _client.get(uri).timeout(const Duration(seconds: 10));
         if (resp.statusCode == 200) {
           final data = jsonDecode(resp.body);
@@ -816,11 +819,26 @@ class RejseplanenApiClient {
               String bestRtTime = rtDepT.isNotEmpty ? rtDepT : (rtArrT.isNotEmpty ? rtArrT : bestTime);
 
               String track = s["rtTrack"]?.toString() ?? s["track"]?.toString() ?? "";
+              if (track.isEmpty) {
+                track = s["rtDepTrack"]?.toString() ?? s["depTrack"]?.toString() ?? s["rtArrTrack"]?.toString() ?? s["arrTrack"]?.toString() ?? "";
+              }
               if (track.isEmpty && s["rtPlatform"] is Map) {
                 track = s["rtPlatform"]["text"]?.toString() ?? "";
               }
               if (track.isEmpty && s["platform"] is Map) {
                 track = s["platform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty && s["rtDepPlatform"] is Map) {
+                track = s["rtDepPlatform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty && s["depPlatform"] is Map) {
+                track = s["depPlatform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty && s["rtArrPlatform"] is Map) {
+                track = s["rtArrPlatform"]["text"]?.toString() ?? "";
+              }
+              if (track.isEmpty && s["arrPlatform"] is Map) {
+                track = s["arrPlatform"]["text"]?.toString() ?? "";
               }
               if (track.isEmpty) track = "-";
 
@@ -838,7 +856,7 @@ class RejseplanenApiClient {
           }
         } else {
           fetchError = "接口请求失败 (HTTP ${resp.statusCode})";
-          debugPrint('[ApiClient] getJourneyDetail HTTP error: ${resp.statusCode}');
+          debugPrint('[ApiClient] getJourneyDetail HTTP error ${resp.statusCode}: ${resp.body}');
         }
       } catch (e) {
         fetchError = "网络请求异常: $e";
@@ -846,7 +864,7 @@ class RejseplanenApiClient {
       }
     } else if (key.isEmpty) {
       fetchError = "未配置 API Key，无法查询经停站点";
-    } else if (refUrlOrParam.isEmpty) {
+    } else if (refUrlOrParam.trim().isEmpty) {
       fetchError = "该车次未提供经停站信息";
     }
 

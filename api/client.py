@@ -648,4 +648,72 @@ class RejseplanenClient:
             return get_mock_trips(origin_id, dest_id), True, err_msg
         return [], False, err_msg
 
+    def get_journey_detail(self, ref_url_or_param: str) -> Tuple[List[Dict[str, Any]], bool, Optional[str]]:
+        """Fetch journey detail intermediate stops using journeyDetail endpoint.
+        Returns (stops, is_mock, error_msg)."""
+        key = self._get_api_key()
+        if not key or not ref_url_or_param or ref_url_or_param.startswith("mock"):
+            return [], True, "未配置 API Key 或无经停信息"
+
+        clean_ref = ref_url_or_param.strip()
+        m_id = re.search(r'[?&]id=([^&]+)', clean_ref)
+        m_ref = re.search(r'[?&]ref=([^&]+)', clean_ref)
+        if m_id:
+            clean_ref = m_id.group(1)
+        elif m_ref:
+            clean_ref = m_ref.group(1)
+        elif clean_ref.startswith("ref="):
+            clean_ref = clean_ref[4:]
+        elif clean_ref.startswith("journeyDetail?"):
+            clean_ref = clean_ref[len("journeyDetail?"):]
+
+        import urllib.parse
+        if "%" in clean_ref:
+            try:
+                clean_ref = urllib.parse.unquote(clean_ref)
+            except Exception:
+                pass
+
+        base = self._get_base_url().rstrip('/')
+        url = f"{base}/journeyDetail"
+        params = {
+            "id": clean_ref,
+            "ref": clean_ref,
+            "accessId": key,
+            "format": "json"
+        }
+        try:
+            resp = self.session.get(url, params=params, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                j_obj = data.get("JourneyDetail") or data.get("journeyDetail") or data
+                raw_stops = j_obj.get("Stops", {}).get("Stop") or j_obj.get("stops", {}).get("stop") or []
+                stops_list = _ensure_list(raw_stops)
+                parsed = []
+                for s in stops_list:
+                    if not isinstance(s, dict):
+                        continue
+                    name = s.get("name") or s.get("stop") or ""
+                    if not name.strip():
+                        continue
+                    dep_t = _format_time_str(s.get("depTime") or s.get("time") or "")
+                    arr_t = _format_time_str(s.get("arrTime") or "")
+                    best_time = dep_t or arr_t
+                    rt_dep_t = _format_time_str(s.get("rtDepTime") or s.get("rtTime") or "")
+                    rt_arr_t = _format_time_str(s.get("rtArrTime") or "")
+                    best_rt_time = rt_dep_t or rt_arr_t or best_time
+                    track = s.get("rtTrack") or s.get("track") or s.get("rtDepTrack") or s.get("depTrack") or s.get("rtArrTrack") or s.get("arrTrack") or "-"
+                    parsed.append({
+                        "name": name,
+                        "time": best_time,
+                        "rt_time": best_rt_time,
+                        "track": track,
+                        "date": s.get("depDate") or s.get("arrDate") or s.get("date") or ""
+                    })
+                if parsed:
+                    return parsed, False, None
+            return [], False, f"HTTP {resp.status_code}: {self._parse_error(resp)}"
+        except Exception as e:
+            return [], False, f"网络异常: {str(e)}"
+
 api_client = RejseplanenClient()
