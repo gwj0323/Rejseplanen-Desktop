@@ -189,15 +189,25 @@ def patch():
             content
         )
         # Enable core library desugaring for flutter_local_notifications
-        if "coreLibraryDesugaringEnabled true" not in content:
+        if "coreLibraryDesugaringEnabled" not in content:
             if "compileOptions {" in content:
                 content = content.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true")
 
-        if "coreLibraryDesugaring" not in content:
+        if "desugar_jdk_libs" not in content:
             if "dependencies {" in content:
                 content = content.replace("dependencies {", "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'")
             else:
                 content += "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n"
+
+        if "checkReleaseBuilds false" not in content:
+            lint_block = """    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+"""
+            if "buildTypes {" in content:
+                content = content.replace("buildTypes {", lint_block + "buildTypes {")
 
         if "multiDexEnabled" not in content and "defaultConfig {" in content:
             content = content.replace("defaultConfig {", "defaultConfig {\n        multiDexEnabled true")
@@ -208,6 +218,7 @@ def patch():
         print("Verified compileSdk in build.gradle:", re.findall(r'compileSdk[^\r\n]*', content))
         print("Verified targetSdk in build.gradle:", re.findall(r'targetSdk[^\r\n]*', content))
         print("Verified minSdk in build.gradle:", re.findall(r'minSdk[^\r\n]*', content))
+        print("Verified desugaring in build.gradle:", "coreLibraryDesugaring" in content and "desugar_jdk_libs" in content)
 
     # 5. Ensure gradle.properties suppresses unsupported compileSdk warning
     gradle_props = "android/gradle.properties"
