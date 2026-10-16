@@ -24,7 +24,8 @@ It integrates directly with the official [Rejseplanen REST API](https://labs.rej
 - **Trip Notifications**: Alerts for departure, transfers, and approaching your stop, plus an ongoing status notification showing your next stop and ETA.
 - **Calendar Export**: Export trips to Apple Calendar or Google Calendar with one click.
 - **Nearby Stops**: Find bus, train, and metro stops near your current location.
-- **Themes & Languages**: English, Danish, and Chinese. Supports dark mode and Material You dynamic colors.
+- **Themes, Nav Styles & Languages**: English, Danish, and Chinese. Supports dark mode, Material You dynamic colors, custom hex accent colors, and switchable bottom navigation bar styles (floating frosted glass bar with sliding capsule or classic Material 3).
+- **In-App Update Check**: Check for new GitHub releases directly from the Settings screen.
 - **Offline Demo**: Built-in mock data for testing without an API key.
 
 ### Downloads
@@ -92,13 +93,14 @@ Spor 是一款开源的丹麦公共交通出行客户端，支持 Android、iOS 
 
 - **行程规划**：起终点路线规划，支持按出发/到达时间筛选、多交通方式过滤，提供站台号、换乘步行引导与实时晚点状态。
 - **经停站时刻轴 (JourneyDetail)**：点击车次展开沿途完整经停站列表、计划到发时间与实际站台。
-- **实时大屏**：各大车站发车与到达时刻表，显示晚点与站台变更，支持 30 秒自动刷新。
+- **实时大屏**：各大车站发车与到达时刻表，显示晚点、停运与站台变更，支持 30 秒自动刷新。
 - **行程通知**：
   - 发车、换乘与到站提醒，通知栏推送避免坐过站。
-  - 行程常驻动态卡片：乘车期间在通知栏实时展示下一站与预计到达时间。
+  - 行程常驻动态卡片：乘车期间在通知栏按当前乘车进度实时更新下一站与预计到达时间。
 - **日历导出**：一键将所选班次导出至 Apple Calendar 或 Google Calendar，包含换乘步骤与站台备注。
 - **附近站点**：利用 GPS 查找周边公交站与火车站，记录搜索历史。
-- **多语言与主题**：支持中文、英文、丹麦语；支持深色模式与 Material You 动态取色。
+- **多语言与外观**：支持中文、英文、丹麦语；支持深色模式、Material You 动态取色及自定义强调色；底栏支持悬浮毛玻璃（支持手势左右滑动切换）与 Material 3 经典样式切换。
+- **应用内检查更新**：在设置页点击版本卡片即可对比 GitHub Release 最新版本并跳转下载。
 - **离线演示**：未配置 API 密钥时可启用离线模拟数据体验。
 
 ### 下载安装

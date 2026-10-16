@@ -62,17 +62,9 @@ class _MainNavigationState extends State<MainNavigation>
 
   double get _currentAnimatedIndex {
     if (_dragIndex != null) return _dragIndex!;
-    final t = Curves.easeOutBack.transform(_dropletController.value);
+    final t = Curves.easeOutCubic.transform(_dropletController.value);
     return ui.lerpDouble(_fromIndex, _toIndex, t) ?? _currentIndex.toDouble();
   }
-
-  /// Saturation matrix (boosts saturation ~1.35x like iOS UIVisualEffectView vibrancy)
-  static const List<double> _vibrancyMatrix = <double>[
-    1.24, -0.18, -0.06, 0, 4,
-    -0.08, 1.20, -0.12, 0, 4,
-    -0.08, -0.18, 1.26, 0, 4,
-    0, 0, 0, 1, 0,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -158,15 +150,15 @@ class _MainNavigationState extends State<MainNavigation>
       ),
     ];
 
-    const double barHeight = 68.0;
-    const double pillRadius = 34.0;
-    const double innerHorizontalPad = 6.0;
+    const double barHeight = 64.0;
+    const double pillRadius = 32.0;
+    const double innerHorizontalPad = 5.0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16,
+        18,
         0,
-        16,
+        18,
         bottomPadding > 0 ? bottomPadding + 6 : 16,
       ),
       child: Container(
@@ -174,47 +166,31 @@ class _MainNavigationState extends State<MainNavigation>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(pillRadius),
           boxShadow: [
-            // Deep ambient elevation shadow
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-              spreadRadius: -4,
-            ),
-            // Subtle colored caustic glow beneath the glass
-            BoxShadow(
-              color: primaryColor.withOpacity(isDark ? 0.22 : 0.10),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-              spreadRadius: -6,
+              color: Colors.black.withOpacity(isDark ? 0.50 : 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+              spreadRadius: -2,
             ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(pillRadius),
           child: BackdropFilter(
-            // Combine vibrancy saturation boost with deep Gaussian blur
-            filter: ui.ImageFilter.compose(
-              outer: ui.ImageFilter.blur(
-                sigmaX: 28.0,
-                sigmaY: 28.0,
-                tileMode: TileMode.mirror,
-              ),
-              inner: const ColorFilter.matrix(_vibrancyMatrix),
+            filter: ui.ImageFilter.blur(
+              sigmaX: 30.0,
+              sigmaY: 30.0,
+              tileMode: TileMode.clamp,
             ),
             child: CustomPaint(
-              // Background optical layer (sub-surface scattering & top curvature sheen)
               painter: LiquidGlassShellPainter(
                 radius: pillRadius,
                 isDark: isDark,
-                accentColor: primaryColor,
                 isForeground: false,
               ),
-              // Foreground optical layer (Fresnel specular rim & inner lip refraction)
               foregroundPainter: LiquidGlassShellPainter(
                 radius: pillRadius,
                 isDark: isDark,
-                accentColor: primaryColor,
                 isForeground: true,
               ),
               child: LayoutBuilder(
@@ -263,14 +239,12 @@ class _MainNavigationState extends State<MainNavigation>
                         animation: _dropletController,
                         builder: (context, _) {
                           final animIdx = _currentAnimatedIndex;
-                          // Calculate liquid stretch deformation during movement
                           final rawProgress = _dropletController.isAnimating
                               ? _dropletController.value
-                              : (_dragIndex != null ? 0.35 : 0.0);
-                          final distance = (_toIndex - _fromIndex).abs().clamp(1.0, 2.2);
+                              : 0.0;
                           final stretchWave = math.sin(rawProgress * math.pi);
-                          final scaleX = 1.0 + 0.22 * stretchWave * (distance * 0.7);
-                          final scaleY = 1.0 - 0.07 * stretchWave;
+                          final scaleX = 1.0 + 0.08 * stretchWave;
+                          final scaleY = 1.0 - 0.03 * stretchWave;
 
                           final dropletLeft = (animIdx * tabWidth).clamp(
                             0.0,
@@ -280,11 +254,11 @@ class _MainNavigationState extends State<MainNavigation>
                           return Stack(
                             alignment: Alignment.centerLeft,
                             children: [
-                              // 1. Sliding & Morphing 3D Liquid Glass Lens Droplet
+                              // 1. Sliding Frosted Pill Indicator (clean uniform iOS 26 style)
                               Positioned(
                                 left: dropletLeft,
-                                top: 6,
-                                bottom: 6,
+                                top: 5,
+                                bottom: 5,
                                 width: tabWidth,
                                 child: Transform(
                                   alignment: Alignment.center,
@@ -306,8 +280,8 @@ class _MainNavigationState extends State<MainNavigation>
                                       (1.0 - (animIdx - idx).abs()).clamp(0.0, 1.0);
 
                                   final inactiveColor = isDark
-                                      ? Colors.white.withOpacity(0.68)
-                                      : const Color(0xFF475569);
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B);
                                   final itemColor = Color.lerp(
                                     inactiveColor,
                                     primaryColor,
@@ -324,7 +298,7 @@ class _MainNavigationState extends State<MainNavigation>
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Transform.scale(
-                                              scale: 1.0 + 0.12 * proximity,
+                                              scale: 1.0 + 0.06 * proximity,
                                               child: Icon(
                                                 proximity > 0.5
                                                     ? item.activeIcon
@@ -341,7 +315,7 @@ class _MainNavigationState extends State<MainNavigation>
                                               style: TextStyle(
                                                 fontSize: 10.5,
                                                 fontWeight: proximity > 0.5
-                                                    ? FontWeight.w700
+                                                    ? FontWeight.w600
                                                     : FontWeight.w500,
                                                 color: itemColor,
                                                 letterSpacing: 0.1,
@@ -370,19 +344,15 @@ class _MainNavigationState extends State<MainNavigation>
   }
 }
 
-/// Renders the outer capsule's optical glass layers:
-/// - Background pass (`isForeground == false`): sub-surface translucent tint + curved top reflection arc.
-/// - Foreground pass (`isForeground == true`): multi-stop Fresnel specular rim + inner concave lip highlight.
+/// Renders the outer capsule's uniform frosted glass fill and 0.8px hairline rim
 class LiquidGlassShellPainter extends CustomPainter {
   final double radius;
   final bool isDark;
-  final Color accentColor;
   final bool isForeground;
 
   LiquidGlassShellPainter({
     required this.radius,
     required this.isDark,
-    required this.accentColor,
     required this.isForeground,
   });
 
@@ -392,112 +362,57 @@ class LiquidGlassShellPainter extends CustomPainter {
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
     if (!isForeground) {
-      // 1. Sub-surface refractive tint fill
+      // Uniform vertical top-to-bottom frosted glass surface (NO left-to-right white gradient!)
       final fillPaint = Paint()
         ..style = PaintingStyle.fill
         ..shader = ui.Gradient.linear(
-          rect.topLeft,
-          rect.bottomRight,
+          rect.topCenter,
+          rect.bottomCenter,
           isDark
               ? [
-                  Colors.white.withOpacity(0.14),
-                  const Color(0xFF0F172A).withOpacity(0.42),
-                  const Color(0xFF1E293B).withOpacity(0.52),
+                  const Color(0xFF1E222D).withOpacity(0.72),
+                  const Color(0xFF141720).withOpacity(0.78),
                 ]
               : [
-                  Colors.white.withOpacity(0.58),
-                  Colors.white.withOpacity(0.28),
-                  Colors.white.withOpacity(0.44),
+                  Colors.white.withOpacity(0.76),
+                  const Color(0xFFF8FAFC).withOpacity(0.68),
                 ],
-          const [0.0, 0.52, 1.0],
         );
       canvas.drawRRect(rrect, fillPaint);
-
-      // 2. Upper half curved sky reflection band
-      final upperRect = Rect.fromLTWH(0, 0, size.width, size.height * 0.48);
-      final skyPaint = Paint()
-        ..style = PaintingStyle.fill
-        ..shader = ui.Gradient.linear(
-          upperRect.topCenter,
-          upperRect.bottomCenter,
-          [
-            Colors.white.withOpacity(isDark ? 0.14 : 0.42),
-            Colors.white.withOpacity(0.0),
-          ],
-        );
-      canvas.save();
-      canvas.clipRRect(rrect);
-      canvas.drawRect(upperRect, skyPaint);
-      canvas.restore();
       return;
     }
 
-    // Foreground Pass: Drawn ON TOP of children so rim light is crisp and unobstructed
-    // 1. Inner concave shadow at bottom edge for 3D glass thickness
-    final innerBottomShadow = Paint()
+    // Subtle 0.8px hairline specular border (top-to-bottom vertical light falloff)
+    final rimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = 0.8
       ..shader = ui.Gradient.linear(
         rect.topCenter,
         rect.bottomCenter,
-        [
-          Colors.transparent,
-          Colors.black.withOpacity(isDark ? 0.30 : 0.08),
-        ],
-        const [0.65, 1.0],
-      );
-    canvas.drawRRect(rrect.deflate(1.0), innerBottomShadow);
-
-    // 2. Diagonal Fresnel Specular Rim Light (Bright top-left & bottom-right bounce)
-    final rimPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = ui.Gradient.linear(
-        rect.topLeft,
-        rect.bottomRight,
         isDark
             ? [
-                Colors.white.withOpacity(0.75),
-                Colors.white.withOpacity(0.18),
-                accentColor.withOpacity(0.15),
-                Colors.white.withOpacity(0.42),
+                Colors.white.withOpacity(0.22),
+                Colors.white.withOpacity(0.06),
+                Colors.white.withOpacity(0.10),
               ]
             : [
-                Colors.white.withOpacity(0.95),
-                Colors.white.withOpacity(0.35),
-                accentColor.withOpacity(0.18),
-                Colors.white.withOpacity(0.75),
+                Colors.white.withOpacity(0.90),
+                Colors.black.withOpacity(0.05),
+                Colors.black.withOpacity(0.08),
               ],
-        const [0.0, 0.35, 0.70, 1.0],
-      );
-    canvas.drawRRect(rrect.deflate(0.75), rimPaint);
-
-    // 3. Top crest intense specular glare line
-    final crestRect = Rect.fromLTWH(size.width * 0.08, 1.2, size.width * 0.84, 1.4);
-    final crestPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = ui.Gradient.linear(
-        crestRect.centerLeft,
-        crestRect.centerRight,
-        [
-          Colors.white.withOpacity(0.0),
-          Colors.white.withOpacity(isDark ? 0.65 : 0.95),
-          Colors.white.withOpacity(0.0),
-        ],
         const [0.0, 0.5, 1.0],
       );
-    canvas.drawRect(crestRect, crestPaint);
+    canvas.drawRRect(rrect.deflate(0.4), rimPaint);
   }
 
   @override
   bool shouldRepaint(covariant LiquidGlassShellPainter oldDelegate) =>
       oldDelegate.isDark != isDark ||
-      oldDelegate.accentColor != accentColor ||
       oldDelegate.radius != radius ||
       oldDelegate.isForeground != isForeground;
 }
 
-/// Renders the sliding convex 3D liquid droplet lens behind the active tab
+/// Renders the clean, uniform frosted capsule behind the active tab (no plastic dome blob)
 class LiquidDropletLensPainter extends CustomPainter {
   final bool isDark;
   final Color primaryColor;
@@ -513,13 +428,7 @@ class LiquidDropletLensPainter extends CustomPainter {
     final radius = size.height / 2;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
-    // 1. Soft outer glow of the liquid droplet
-    final glowPaint = Paint()
-      ..color = primaryColor.withOpacity(isDark ? 0.24 : 0.14)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawRRect(rrect.deflate(2), glowPaint);
-
-    // 2. Convex droplet body fill (glassy primary tint + bright top)
+    // 1. Clean, uniform translucent pill fill (subtle vertical glass gradient)
     final bodyPaint = Paint()
       ..style = PaintingStyle.fill
       ..shader = ui.Gradient.linear(
@@ -527,60 +436,40 @@ class LiquidDropletLensPainter extends CustomPainter {
         rect.bottomCenter,
         isDark
             ? [
-                Colors.white.withOpacity(0.24),
-                primaryColor.withOpacity(0.28),
-                primaryColor.withOpacity(0.16),
+                Colors.white.withOpacity(0.14),
+                Colors.white.withOpacity(0.08),
               ]
             : [
-                Colors.white.withOpacity(0.88),
-                Color.lerp(Colors.white, primaryColor, 0.16)!.withOpacity(0.72),
-                Color.lerp(Colors.white, primaryColor, 0.24)!.withOpacity(0.62),
+                Colors.white.withOpacity(0.92),
+                Colors.white.withOpacity(0.75),
               ],
-        const [0.0, 0.5, 1.0],
       );
     canvas.drawRRect(rrect, bodyPaint);
 
-    // 3. Top convex lens highlight dome (simulating curved water droplet surface)
-    final domeRect = Rect.fromLTWH(
-      size.width * 0.12,
-      2.0,
-      size.width * 0.76,
-      size.height * 0.38,
-    );
-    final domeRRect = RRect.fromRectAndRadius(domeRect, Radius.circular(radius));
-    final domePaint = Paint()
+    // 2. Very subtle primary color ambient tint (6% opacity)
+    final tintPaint = Paint()
       ..style = PaintingStyle.fill
-      ..shader = ui.Gradient.linear(
-        domeRect.topCenter,
-        domeRect.bottomCenter,
-        [
-          Colors.white.withOpacity(isDark ? 0.42 : 0.90),
-          Colors.white.withOpacity(0.0),
-        ],
-      );
-    canvas.drawRRect(domeRRect, domePaint);
+      ..color = primaryColor.withOpacity(isDark ? 0.12 : 0.08);
+    canvas.drawRRect(rrect, tintPaint);
 
-    // 4. Crisp Fresnel rim around the droplet lens
+    // 3. Delicate 0.8px hairline rim on the active pill
     final rimPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
+      ..strokeWidth = 0.8
       ..shader = ui.Gradient.linear(
-        rect.topLeft,
-        rect.bottomRight,
+        rect.topCenter,
+        rect.bottomCenter,
         isDark
             ? [
-                Colors.white.withOpacity(0.75),
-                primaryColor.withOpacity(0.45),
-                Colors.white.withOpacity(0.30),
+                Colors.white.withOpacity(0.24),
+                Colors.white.withOpacity(0.05),
               ]
             : [
                 Colors.white,
-                primaryColor.withOpacity(0.32),
-                Colors.white.withOpacity(0.85),
+                Colors.black.withOpacity(0.04),
               ],
-        const [0.0, 0.55, 1.0],
       );
-    canvas.drawRRect(rrect.deflate(0.6), rimPaint);
+    canvas.drawRRect(rrect.deflate(0.4), rimPaint);
   }
 
   @override

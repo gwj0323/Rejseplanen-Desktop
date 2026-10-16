@@ -8,8 +8,8 @@ import '../models/trip.dart';
 import '../services/notification_service.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.1.1';
-  static const int appBuildNumber = 18;
+  static const String appVersion = '1.1.2';
+  static const int appBuildNumber = 19;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
