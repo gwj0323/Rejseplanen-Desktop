@@ -1,6 +1,6 @@
 # Spor
 
-[English](#english) | [中文说明](#中文)
+[English](#english) | [Dansk](#dansk) | [中文说明](#中文)
 
 [![Release](https://img.shields.io/github/v/release/gwj0323/spor-app?color=blue)](https://github.com/gwj0323/spor-app/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -83,6 +83,83 @@ pyinstaller Rejseplanen.spec
  
 - **Source Code**: Licensed under the [MIT License](LICENSE).
 - **Transit Data**: Public transit schedules, stop locations, and real-time transit information are provided by and property of [Rejseplanen A/S](https://www.rejseplanen.dk/). Use of the API is subject to the terms and conditions of Rejseplanen Labs (personal, non-commercial use).
+
+---
+
+<a name="dansk"></a>
+## Dansk
+
+Spor er en open source-app til offentlig transport i Danmark, tilgængelig på Android, iOS og desktop (Windows / macOS / Linux).
+
+Den integrerer direkte med den officielle [Rejseplanen REST API](https://labs.rejseplanen.dk/) og dækker landsdækkende tog (DSB, Arriva/GoCollective), Københavns S-tog, Københavns Metro (M1–M4), regional- og bybusser (Movia, Midttrafik m.fl.) samt indenlandske færger.
+
+### Funktioner
+
+- **Rejseplanlægning**: Søg rejser med afgangs- og ankomstfiltre, valg af transportmidler, sporangivelse, gangruter ved skift og live-forsinkelser med farvekodede tidslinjer.
+- **Pendlerforslag & Vaneprioritering**:
+  - Foreslår ofte benyttede ruter og returrejser baseret på dine faste rejsetidspunkter, seneste søgninger og stationer i nærheden.
+  - Rangerer rejseforslag efter dine personlige rejsevaner (rejsetid, antal skift, gangdistance samt præference for Metro/S-tog/Tog/Bus) og fremhæver den anbefalede rute med en hurtig sorteringsknap.
+  - **Advarsel om kort skiftetid**: Viser tydelige advarsler ved stramme skiftetider eller forsinkelser på tidligere delstrækninger.
+- **Stop undervejs & Visuelle proportioner**: Tryk på en delstrækning for at se alle stop undervejs, eller få et hurtigt overblik via de proportionale farvede tidslinjer på hvert rejsekort.
+- **Afgangstavler i realtid**: Se live afgange og ankomster for enhver station med forsinkelser, sporændringer, 30 sekunders automatisk opdatering og hurtigvalg af dine mest besøgte stationer.
+- **Samlede rejsepåmindelser**: Én samlet menu til administration af afgangsnotifikationer, skiftepåmindelser, ankomstbeskeder samt løbende statuskort i notifikationslinjen.
+- **Kalendereksport & Rejsedeling**: Føj rejser til din kalender (Apple/Google) med et enkelt tryk, eller kopier en formateret rejseoversigt med linje og spor.
+- **Stationer i nærheden**: Find nemt bus-, tog- og metrostop nær din aktuelle position via GPS.
+- **Temaer, Navigation & Sprog**: Dansk, engelsk og kinesisk. Understøtter mørk tilstand, dynamiske Material You-farver, brugerdefinerede kontrastfarver og valgbar navigationslinje (svævende frosted-glass med glidende indikator eller klassisk Material 3).
+- **Opdatering i appen**: Tjek direkte efter nye versioner og GitHub Releases fra Indstillinger.
+- **Offline demo**: Indbyggede testdata, så appen kan afprøves uden en API-nøgle.
+
+### Download & Installation
+
+Færdigbyggede installationspakker kan downloades fra **[Releases-siden](https://github.com/gwj0323/spor-app/releases)**:
+
+| Platform | Pakke | Installation |
+| :--- | :--- | :--- |
+| **Android** | `app-release.apk` | Download og installer direkte (tillad installation fra ukendte kilder). Signeret med fast release-nøgle, så fremtidige opdateringer kan installeres uden geninstallation. |
+| **iOS** | `spor-ios-release.ipa` | Sideload via [Sideloadly](https://sideloadly.io/), [AltStore](https://altstore.io/) eller [TrollStore](https://github.com/opa334/TrollStore). |
+
+### API-konfiguration
+
+Appen leveres med offline testdata slået til som standard. For at hente live-trafikdata i Danmark:
+
+1. Opret en gratis konto på [Rejseplanen Labs](https://labs.rejseplanen.dk/) og anmod om et gratis `accessId` (50.000 månedlige forespørgsler til personlig, ikke-kommerciel brug).
+2. Indtast dit `accessId` under **Indstillinger** i appen og gem.
+
+### Udvikling & Byg
+
+#### Mobil (Flutter)
+
+Kildekoden findes i `rejseplanen_mobile/`. Kræver Flutter 3.27+:
+
+```bash
+cd rejseplanen_mobile
+flutter pub get
+flutter run
+```
+
+Byg Release APK:
+```bash
+flutter build apk --release
+```
+
+#### Desktop (PyQt6)
+
+Kræver Python 3.10+:
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+Byg Windows-eksekverbar fil:
+```bash
+pyinstaller Rejseplanen.spec
+```
+
+### Licens & Datakreditering
+
+- **Kildekode**: Udgivet under [MIT-licensen](LICENSE).
+- **Trafikdata**: Køreplaner, stoppesteder og realtidsdata for offentlig transport leveres af og tilhører [Rejseplanen A/S](https://www.rejseplanen.dk/). Brug af API'et er underlagt vilkårene hos Rejseplanen Labs (personlig, ikke-kommerciel brug).
 
 ---
 
