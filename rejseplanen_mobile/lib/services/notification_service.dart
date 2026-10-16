@@ -537,6 +537,75 @@ class NotificationService {
     }
   }
 
+  /// Schedule a 1-tap Arrival / Alighting Alarm (e.g. 5 mins before real-time arrival)
+  Future<bool> scheduleQuickArrivalAlarm({
+    required TripProposal trip,
+    required Station origin,
+    required Station destination,
+    int advanceMinutes = 5,
+    String lang = 'en_US',
+  }) async {
+    await init();
+    await requestPermission();
+
+    final DateTime now = DateTime.now();
+    final DateTime? tripDate = _parseHafasDate(
+      trip.legs.isNotEmpty ? trip.legs.first.origin.date : null,
+    );
+    final DateTime baseDate = tripDate ?? now;
+    final bool hasExplicitDate = tripDate != null;
+    final int idBase = _tripIdBase(trip, origin: origin, destination: destination);
+    final int arrId = (idBase + 305) % 100000;
+
+    final String effectiveArrStr = (trip.legs.isNotEmpty &&
+            trip.legs.last.destination.rtTime.trim().isNotEmpty)
+        ? trip.legs.last.destination.rtTime.trim()
+        : trip.arrTime;
+    if (effectiveArrStr.isEmpty) return false;
+
+    final lastLegDate =
+        trip.legs.isNotEmpty ? _parseHafasDate(trip.legs.last.destination.date) : null;
+    final arrBase = lastLegDate ?? baseDate;
+    final arrDateTime = _parseTripDateTime(
+      effectiveArrStr,
+      arrBase,
+      hasExplicitDate: hasExplicitDate || lastLegDate != null,
+    );
+    final triggerTime = arrDateTime.subtract(Duration(minutes: advanceMinutes));
+
+    final title = I18n.tr('notif_arr_title', lang, {'station': destination.name});
+    final body = I18n.tr('notif_arr_body', lang, {
+      'time': effectiveArrStr,
+      'station': destination.name,
+    });
+
+    if (triggerTime.isAfter(now)) {
+      await _scheduleSingle(arrId, title, body, triggerTime, 'quick_arr');
+      return true;
+    } else if (arrDateTime.isAfter(now)) {
+      await showInstantNotification(id: arrId, title: title, body: body, payload: 'quick_arr');
+      return true;
+    } else {
+      await showInstantNotification(id: arrId, title: title, body: body, payload: 'quick_arr');
+      return true;
+    }
+  }
+
+  /// Cancel the 1-tap Arrival / Alighting Alarm
+  Future<void> cancelQuickArrivalAlarm({
+    required TripProposal trip,
+    required Station origin,
+    required Station destination,
+  }) async {
+    try {
+      final int idBase = _tripIdBase(trip, origin: origin, destination: destination);
+      final int arrId = (idBase + 305) % 100000;
+      await _notificationsPlugin.cancel(arrId);
+    } catch (e) {
+      debugPrint('[NotificationService] Error cancelling quick arrival alarm: $e');
+    }
+  }
+
   /// Cancel all reminders for a given trip proposal
   Future<void> cancelTripReminders(
     TripProposal trip, {
@@ -547,8 +616,10 @@ class NotificationService {
       final int idBase = _tripIdBase(trip, origin: origin, destination: destination);
       final int depId = (idBase + 101) % 100000;
       final int arrId = (idBase + 301) % 100000;
+      final int quickArrId = (idBase + 305) % 100000;
       await _notificationsPlugin.cancel(depId);
       await _notificationsPlugin.cancel(arrId);
+      await _notificationsPlugin.cancel(quickArrId);
 
       for (int i = 0; i < trip.legs.length; i++) {
         final int transferId = (idBase + 200 + i) % 100000;

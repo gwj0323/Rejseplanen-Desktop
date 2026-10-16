@@ -11,6 +11,7 @@ import '../i18n/translations.dart';
 import '../widgets/station_picker.dart';
 import '../widgets/trip_card.dart';
 import '../services/notification_service.dart';
+import '../services/smart_transit_service.dart';
 
 class TripScreen extends StatefulWidget {
   final Station? initialOrigin;
@@ -27,6 +28,8 @@ class _TripScreenState extends State<TripScreen> {
   Station _destination = Station(id: "", name: "");
   bool _locatingOrigin = false;
   bool _hasSearched = false;
+  double? _currentLat;
+  double? _currentLon;
 
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -36,6 +39,7 @@ class _TripScreenState extends State<TripScreen> {
   bool _filterStog = true;
   bool _filterMetro = true;
   bool _filterBus = true;
+  bool _sortBySmartRank = false;
 
   bool _isLoading = false;
   List<TripProposal> _trips = [];
@@ -65,6 +69,8 @@ class _TripScreenState extends State<TripScreen> {
     if (!mounted) return;
 
     if (loc.isSuccess && loc.lat != null && loc.lon != null) {
+      _currentLat = loc.lat;
+      _currentLon = loc.lon;
       final config = Provider.of<AppConfig>(context, listen: false);
       final client = RejseplanenApiClient(config);
       final res = await client.nearbyStops(loc.lat!, loc.lon!, maxNo: 6);
@@ -144,6 +150,7 @@ class _TripScreenState extends State<TripScreen> {
     final config = Provider.of<AppConfig>(context, listen: false);
     config.addRecentStation(_origin);
     config.addRecentStation(_destination);
+    config.recordRouteSearch(_origin, _destination);
     final client = RejseplanenApiClient(config);
 
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
@@ -198,6 +205,16 @@ class _TripScreenState extends State<TripScreen> {
 
   Widget _buildSuggestedRoutesSection(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final config = Provider.of<AppConfig>(context);
+
+    final predictedRoutes = config.smartService.predictRoutes(
+      favoriteTrips: config.favoriteTrips,
+      currentLat: _currentLat,
+      currentLon: _currentLon,
+      limit: 3,
+    );
+
     final popularTrips = [
       {
         "orig": Station(id: "8600626", name: "København H", lat: 55.673063, lon: 12.565562),
@@ -234,6 +251,109 @@ class _TripScreenState extends State<TripScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. On-Device Smart Commute Predictions
+          if (predictedRoutes.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  I18n.t(context, "smart_commute_title"),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    I18n.t(context, "smart_commute_subtitle"),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final pred in predictedRoutes)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primaryContainer.withOpacity(isDark ? 0.25 : 0.40),
+                      theme.colorScheme.surface,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.28),
+                  ),
+                ),
+                child: ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+                    child: Icon(Icons.bolt, color: theme.colorScheme.primary, size: 20),
+                  ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "${pred.origin.name} ➔ ${pred.dest.name}",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          I18n.t(context, "smart_confidence_badge", {
+                            "pct": "${(pred.confidence * 100).round()}",
+                          }),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      I18n.t(context, pred.reasonKey, pred.reasonParams),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _origin = pred.origin;
+                      _destination = pred.dest;
+                      _selectedDate = DateTime.now();
+                      _selectedTime = TimeOfDay.now();
+                    });
+                    _searchTrips();
+                  },
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+
+          // 2. Popular Routes Section
           Row(
             children: [
               Icon(Icons.explore_outlined, size: 18, color: theme.colorScheme.primary),
@@ -292,6 +412,10 @@ class _TripScreenState extends State<TripScreen> {
     final timeStr =
         "${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}";
     final displayedTrips = _trips.where(_tripMatchesFilters).toList();
+    final scoredTrips = config.smartService.scoreProposals(displayedTrips);
+    if (_sortBySmartRank) {
+      scoredTrips.sort((a, b) => b.score.compareTo(a.score));
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -641,28 +765,56 @@ class _TripScreenState extends State<TripScreen> {
                   ),
                 ),
 
-              if (displayedTrips.isNotEmpty) ...[
+              if (scoredTrips.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Row(
                     children: [
                       Text(
                         I18n.t(context, "trip_results"),
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Text(
-                        I18n.t(context, "trip_results_count", {"count": "${displayedTrips.length}"}),
+                        I18n.t(context, "trip_results_count", {"count": "${scoredTrips.length}"}),
                         style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                      const Spacer(),
+                      FilterChip(
+                        visualDensity: VisualDensity.compact,
+                        avatar: Icon(
+                          Icons.bolt,
+                          size: 15,
+                          color: _sortBySmartRank
+                              ? theme.colorScheme.onSecondaryContainer
+                              : theme.colorScheme.primary,
+                        ),
+                        label: Text(
+                          I18n.t(context, "smart_sort_toggle"),
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                        ),
+                        selected: _sortBySmartRank,
+                        onSelected: (v) => setState(() => _sortBySmartRank = v),
                       ),
                     ],
                   ),
                 ),
-                for (var trip in displayedTrips)
+                for (final item in scoredTrips)
                   TripCard(
-                    trip: trip,
+                    trip: item.trip,
                     origin: _origin,
                     destination: _destination,
+                    isSmartPick: item.isSmartPick,
+                    smartReasonKey: item.reasonKey,
+                    transferRisk: item.transferRisk,
+                    onTripSelected: () {
+                      config.recordTripChoice(
+                        _origin,
+                        _destination,
+                        item.trip,
+                        displayedTrips,
+                      );
+                    },
                   ),
               ] else if (!_isLoading) ...[
                 Center(

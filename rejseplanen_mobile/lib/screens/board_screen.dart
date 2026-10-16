@@ -34,11 +34,28 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
   bool _autoRefresh = false;
   Timer? _refreshTimer;
 
+  double? _currentLat;
+  double? _currentLon;
+
   @override
   void initState() {
     super.initState();
     if (widget.initialStation != null) {
       _currentStation = widget.initialStation!;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final config = Provider.of<AppConfig>(context, listen: false);
+        final preds = config.smartService.predictBoardStations(
+          favoriteStations: config.favoriteStations,
+          recentStations: config.recentStations,
+          limit: 1,
+        );
+        if (preds.isNotEmpty && preds.first.station.name != _currentStation.name) {
+          setState(() => _currentStation = preds.first.station);
+          _fetchBoard();
+        }
+      });
     }
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
@@ -76,6 +93,8 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
     if (!mounted) return;
 
     if (loc.isSuccess && loc.lat != null && loc.lon != null) {
+      _currentLat = loc.lat;
+      _currentLon = loc.lon;
       final config = Provider.of<AppConfig>(context, listen: false);
       final client = RejseplanenApiClient(config);
       final res = await client.nearbyStops(loc.lat!, loc.lon!, maxNo: 6);
@@ -83,6 +102,7 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
         setState(() => _locatingGps = false);
         if (res.data.isNotEmpty) {
           final nearest = res.data.first;
+          config.recordBoardStationView(nearest);
           setState(() => _currentStation = nearest);
           _fetchBoard();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -232,90 +252,156 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
       ),
       body: Column(
         children: [
-          // Station Selection & Status Card
+          // Station Selection & Smart Station Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () async {
-                      final s = await StationPickerModal.show(context,
-                          title: I18n.t(context, "board_station"));
-                      if (s != null) {
-                        final config = Provider.of<AppConfig>(context, listen: false);
-                        config.addRecentStation(s);
-                        setState(() => _currentStation = s);
-                        _fetchBoard();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.withOpacity(0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.train, size: 20, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _currentStation.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        onTap: () async {
+                          final s = await StationPickerModal.show(context,
+                              title: I18n.t(context, "board_station"));
+                          if (s != null) {
+                            final config = Provider.of<AppConfig>(context, listen: false);
+                            config.addRecentStation(s);
+                            config.recordBoardStationView(s);
+                            setState(() => _currentStation = s);
+                            _fetchBoard();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: theme.scaffoldBackgroundColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.withOpacity(0.25)),
                           ),
-                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                        ],
+                          child: Row(
+                            children: [
+                              const Icon(Icons.train, size: 20, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _currentStation.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      icon: _locatingGps
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.my_location, size: 20),
+                      tooltip: I18n.t(context, "station_get_current_location"),
+                      onPressed: _locatingGps ? null : _locateCurrentStation,
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton.filledTonal(
+                      icon: Icon(
+                        config.isFavoriteStation(_currentStation.id) ? Icons.star : Icons.star_border,
+                        color: config.isFavoriteStation(_currentStation.id) ? Colors.amber : null,
+                      ),
+                      tooltip: I18n.t(context, "board_add_fav"),
+                      onPressed: () {
+                        if (config.isFavoriteStation(_currentStation.id)) {
+                          config.removeFavoriteStation(_currentStation.id);
+                        } else {
+                          config.addFavoriteStation(_currentStation);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(I18n.t(context, "saved_to_fav"))),
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.map_outlined, size: 20),
+                      tooltip: I18n.t(context, "station_open_in_maps"),
+                      onPressed: () {
+                        LocationService.openInMaps(
+                          _currentStation.lat,
+                          _currentStation.lon,
+                          name: _currentStation.name,
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: _locatingGps
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location, size: 20),
-                  tooltip: I18n.t(context, "station_get_current_location"),
-                  onPressed: _locatingGps ? null : _locateCurrentStation,
-                ),
-                const SizedBox(width: 6),
-                IconButton.filledTonal(
-                  icon: Icon(
-                    config.isFavoriteStation(_currentStation.id) ? Icons.star : Icons.star_border,
-                    color: config.isFavoriteStation(_currentStation.id) ? Colors.amber : null,
-                  ),
-                  tooltip: I18n.t(context, "board_add_fav"),
-                  onPressed: () {
-                    if (config.isFavoriteStation(_currentStation.id)) {
-                      config.removeFavoriteStation(_currentStation.id);
-                    } else {
-                      config.addFavoriteStation(_currentStation);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(I18n.t(context, "saved_to_fav"))),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(width: 6),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.map_outlined, size: 20),
-                  tooltip: I18n.t(context, "station_open_in_maps"),
-                  onPressed: () {
-                    LocationService.openInMaps(
-                      _currentStation.lat,
-                      _currentStation.lon,
-                      name: _currentStation.name,
+                Builder(
+                  builder: (context) {
+                    final smartStations = config.smartService.predictBoardStations(
+                      favoriteStations: config.favoriteStations,
+                      recentStations: config.recentStations,
+                      currentLat: _currentLat,
+                      currentLon: _currentLon,
+                      limit: 4,
+                    );
+                    if (smartStations.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_awesome, size: 13, color: theme.colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${I18n.t(context, 'board_smart_stations')}:",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            for (final pred in smartStations)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ActionChip(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  backgroundColor: pred.station.name == _currentStation.name
+                                      ? theme.colorScheme.primaryContainer
+                                      : null,
+                                  label: Text(
+                                    pred.station.name,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: pred.station.name == _currentStation.name
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    if (pred.station.name != _currentStation.name) {
+                                      config.recordBoardStationView(pred.station);
+                                      setState(() => _currentStation = pred.station);
+                                      _fetchBoard();
+                                    }
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),

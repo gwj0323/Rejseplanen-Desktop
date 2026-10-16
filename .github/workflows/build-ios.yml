@@ -3,13 +3,13 @@ name: Build iOS IPA
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
 
-# Least-privilege token: the build only needs to read the repo and upload artifacts.
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -65,6 +65,15 @@ jobs:
           name: spor-release-ipa
           path: rejseplanen_mobile/spor-ios-release.ipa
           retention-days: 3
+
+      - name: Publish iOS IPA to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
+          files: |
+            rejseplanen_mobile/spor-ios-release.ipa
 
       - name: Prune older artifacts
         if: success()

@@ -83,6 +83,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          body_path: RELEASE_NOTES.md
           generate_release_notes: true
           files: |
             rejseplanen_mobile/build/app/outputs/flutter-apk/app-release.apk

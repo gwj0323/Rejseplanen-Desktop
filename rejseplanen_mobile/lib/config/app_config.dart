@@ -6,14 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/station.dart';
 import '../models/trip.dart';
 import '../services/notification_service.dart';
+import '../services/smart_transit_service.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.1.3';
-  static const int appBuildNumber = 20;
+  static const String appVersion = '1.2.0';
+  static const int appBuildNumber = 21;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
   static const String _keyBaseUrl = 'rejseplanen_base_url';
+
+  final SmartTransitService smartService = SmartTransitService();
 
   String _apiKey = '';
   String _baseUrl = 'https://www.rejseplanen.dk/api';
@@ -96,6 +99,38 @@ class AppConfig extends ChangeNotifier {
       _activeTripReminderIds.remove(tripIdx);
     }
     notifyListeners();
+  }
+
+  final Set<String> _activeArrivalAlarmIds = {};
+  bool isArrivalAlarmActive(String tripIdx) => _activeArrivalAlarmIds.contains(tripIdx);
+  void setArrivalAlarmActive(String tripIdx, bool active) {
+    if (active) {
+      _activeArrivalAlarmIds.add(tripIdx);
+    } else {
+      _activeArrivalAlarmIds.remove(tripIdx);
+    }
+    notifyListeners();
+  }
+
+  void recordRouteSearch(Station origin, Station dest) {
+    smartService.recordCommuteAction(origin, dest, weight: 1.0);
+    saveSettings();
+  }
+
+  void recordTripChoice(
+    Station origin,
+    Station dest,
+    TripProposal chosen,
+    List<TripProposal> candidates,
+  ) {
+    smartService.recordCommuteAction(origin, dest, weight: 2.5);
+    smartService.learnFromTripSelection(chosen, candidates);
+    saveSettings();
+  }
+
+  void recordBoardStationView(Station station) {
+    smartService.recordBoardStationView(station);
+    saveSettings();
   }
 
   String? _activeOngoingTripIdx;
@@ -212,6 +247,7 @@ class AppConfig extends ChangeNotifier {
         if (standaloneKey != null) _apiKey = standaloneKey;
         if (standaloneUrl != null) _baseUrl = standaloneUrl;
       }
+      await smartService.loadFromPrefs(prefs);
       debugPrint('[AppConfig] Loaded settings. apiKey: ${_apiKey.isNotEmpty ? "SET (${_apiKey.length} chars)" : "EMPTY"}, language: $_language');
       notifyListeners();
     } catch (e) {
@@ -247,6 +283,7 @@ class AppConfig extends ChangeNotifier {
         'recent_searches': _recentSearches,
       };
       await prefs.setString(_keySettings, jsonEncode(data));
+      await smartService.saveToPrefs(prefs);
       debugPrint('[AppConfig] Saved settings to disk. apiKey length: ${_apiKey.length}');
       notifyListeners();
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/trip.dart';
 import '../models/station.dart';
@@ -9,18 +10,27 @@ import 'trip_reminder_sheet.dart';
 import '../services/calendar_service.dart';
 import '../services/notification_service.dart';
 import '../services/api_client.dart';
+import '../services/smart_transit_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class TripCard extends StatefulWidget {
   final TripProposal trip;
   final Station origin;
   final Station destination;
+  final bool isSmartPick;
+  final String? smartReasonKey;
+  final TransferRiskSummary? transferRisk;
+  final VoidCallback? onTripSelected;
 
   const TripCard({
     super.key,
     required this.trip,
     required this.origin,
     required this.destination,
+    this.isSmartPick = false,
+    this.smartReasonKey,
+    this.transferRisk,
+    this.onTripSelected,
   });
 
   @override
@@ -36,25 +46,99 @@ class _TripCardState extends State<TripCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final trip = widget.trip;
     final config = Provider.of<AppConfig>(context);
+    final risk = widget.transferRisk ?? SmartTransitService.analyzeTransferRisk(trip);
+    final legSegments = SmartTransitService.computeLegSegments(trip);
 
     return Card(
-      elevation: 1,
+      elevation: widget.isSmartPick ? 2 : 1,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: widget.isSmartPick
+            ? BorderSide(
+                color: theme.colorScheme.primary.withOpacity(isDark ? 0.55 : 0.45),
+                width: 1.4,
+              )
+            : BorderSide.none,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
+          final willExpand = !_expanded;
           setState(() {
-            _expanded = !_expanded;
+            _expanded = willExpand;
           });
+          if (willExpand) {
+            widget.onTripSelected?.call();
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Smart Pick Header Banner (if top ranked by on-device ML model)
+              if (widget.isSmartPick) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(isDark ? 0.24 : 0.14),
+                        theme.colorScheme.primaryContainer.withOpacity(isDark ? 0.15 : 0.30),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.28),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.bolt, size: 15, color: theme.colorScheme.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        I18n.t(context, "smart_pick_badge"),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      if (widget.smartReasonKey != null) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text(
+                            "·",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            I18n.t(context, widget.smartReasonKey!),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: theme.colorScheme.onSurface.withOpacity(0.85),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
               // Top Row: Times, Duration, Transfers
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -96,52 +180,43 @@ class _TripCardState extends State<TripCard> {
                         : "${trip.changes} ${I18n.t(context, "trip_changes")}",
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
-                  if (config.isTripReminderActive(trip.idx)) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        border: Border.all(color: Colors.green.shade300),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.notifications_active, size: 11, color: Colors.green.shade700),
-                          const SizedBox(width: 3),
-                          Text(
-                            I18n.t(context, "trip_reminder_active"),
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade800),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  if (config.isOngoingTripActive(trip.idx)) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        border: Border.all(color: Colors.blue.shade300),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.radar, size: 11, color: Colors.blue.shade700),
-                          const SizedBox(width: 3),
-                          Text(
-                            I18n.t(context, "trip_ongoing_active"),
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
               ),
+
+              // Status & Transfer Risk Row
+              if (risk.overallLevel != TransferRiskLevel.none ||
+                  config.isTripReminderActive(trip.idx) ||
+                  config.isArrivalAlarmActive(trip.idx) ||
+                  config.isOngoingTripActive(trip.idx)) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    if (risk.overallLevel != TransferRiskLevel.none)
+                      _buildTransferRiskChip(context, risk),
+                    if (config.isTripReminderActive(trip.idx))
+                      _buildActiveStatusBadge(
+                        icon: Icons.notifications_active,
+                        label: I18n.t(context, "trip_reminder_active"),
+                        color: Colors.green,
+                      ),
+                    if (config.isArrivalAlarmActive(trip.idx))
+                      _buildActiveStatusBadge(
+                        icon: Icons.alarm_on,
+                        label: I18n.t(context, "trip_quick_arr_active"),
+                        color: Colors.teal,
+                      ),
+                    if (config.isOngoingTripActive(trip.idx))
+                      _buildActiveStatusBadge(
+                        icon: Icons.radar,
+                        label: I18n.t(context, "trip_ongoing_active"),
+                        color: Colors.blue,
+                      ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: 12),
 
               // Badges row for all transit legs
@@ -174,6 +249,12 @@ class _TripCardState extends State<TripCard> {
                 ],
               ),
 
+              // Visual Leg Proportion Bar
+              if (legSegments.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _buildLegProportionBar(context, legSegments),
+              ],
+
               // Expandable Detail Timeline
               if (_expanded) ...[
                 const Padding(
@@ -185,8 +266,12 @@ class _TripCardState extends State<TripCard> {
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                for (int i = 0; i < trip.legs.length; i++)
+                for (int i = 0; i < trip.legs.length; i++) ...[
                   _buildLegDetail(context, trip.legs[i], i),
+                  // Show transfer buffer pill between motorized legs
+                  for (final tr in risk.transfers)
+                    if (tr.fromLegIndex == i) _buildInlineTransferBanner(context, tr),
+                ],
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -224,6 +309,7 @@ class _TripCardState extends State<TripCard> {
                             );
                           }
                         } else {
+                          widget.onTripSelected?.call();
                           config.startOngoingTrip(widget.trip, widget.origin, widget.destination);
                           await NotificationService().showOngoingTripNotification(
                             trip: widget.trip,
@@ -240,7 +326,70 @@ class _TripCardState extends State<TripCard> {
                       },
                     ),
 
-                    // 2. Scheduled Trip Reminders
+                    // 2. 1-Tap Quick Alighting / Arrival Alarm (-5m)
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: config.isArrivalAlarmActive(trip.idx)
+                            ? Colors.teal.withOpacity(0.18)
+                            : theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+                        foregroundColor: config.isArrivalAlarmActive(trip.idx)
+                            ? Colors.teal.shade800
+                            : theme.colorScheme.onSurface,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      icon: Icon(
+                        config.isArrivalAlarmActive(trip.idx)
+                            ? Icons.alarm_on
+                            : Icons.notifications_active_outlined,
+                        size: 17,
+                      ),
+                      label: Text(
+                        config.isArrivalAlarmActive(trip.idx)
+                            ? I18n.t(context, "trip_quick_arr_active")
+                            : I18n.t(context, "trip_quick_arr_alarm"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      onPressed: () async {
+                        if (config.isArrivalAlarmActive(trip.idx)) {
+                          await NotificationService().cancelQuickArrivalAlarm(
+                            trip: widget.trip,
+                            origin: widget.origin,
+                            destination: widget.destination,
+                          );
+                          config.setArrivalAlarmActive(trip.idx, false);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(I18n.t(context, "trip_quick_arr_off_snack"))),
+                            );
+                          }
+                        } else {
+                          widget.onTripSelected?.call();
+                          final ok = await NotificationService().scheduleQuickArrivalAlarm(
+                            trip: widget.trip,
+                            origin: widget.origin,
+                            destination: widget.destination,
+                            advanceMinutes: 5,
+                            lang: config.effectiveLanguage,
+                          );
+                          if (ok) {
+                            config.setArrivalAlarmActive(trip.idx, true);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    I18n.t(context, "trip_quick_arr_on_snack", {
+                                      "station": widget.destination.name,
+                                    }),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
+
+                    // 3. Full Scheduled Trip Reminders Sheet
                     FilledButton.tonalIcon(
                       style: FilledButton.styleFrom(
                         backgroundColor: config.isTripReminderActive(trip.idx)
@@ -264,6 +413,7 @@ class _TripCardState extends State<TripCard> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       onPressed: () {
+                        widget.onTripSelected?.call();
                         TripReminderSheet.show(
                           context,
                           trip: widget.trip,
@@ -273,7 +423,37 @@ class _TripCardState extends State<TripCard> {
                       },
                     ),
 
-                    // 3. Add to Calendar
+                    // 4. 1-Tap Copy / Share Trip Summary
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      icon: const Icon(Icons.share_outlined, size: 16),
+                      label: Text(
+                        I18n.t(context, "trip_share_btn"),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      onPressed: () async {
+                        widget.onTripSelected?.call();
+                        final text = SmartTransitService.formatTripShareText(
+                          context: context,
+                          trip: widget.trip,
+                          origin: widget.origin,
+                          destination: widget.destination,
+                        );
+                        await Clipboard.setData(ClipboardData(text: text));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(I18n.t(context, "trip_share_copied")),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+
+                    // 5. Add to Calendar
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -284,6 +464,7 @@ class _TripCardState extends State<TripCard> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       onPressed: () async {
+                        widget.onTripSelected?.call();
                         final ok = await CalendarService.addTripToCalendar(
                           trip: widget.trip,
                           origin: widget.origin,
@@ -341,7 +522,7 @@ class _TripCardState extends State<TripCard> {
                       },
                     ),
 
-                    // 4. Save to Favorites
+                    // 6. Save to Favorites
                     TextButton.icon(
                       icon: const Icon(Icons.star_border, size: 17),
                       label: Text(
@@ -364,6 +545,203 @@ class _TripCardState extends State<TripCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActiveStatusBadge({
+    required IconData icon,
+    required String label,
+    required MaterialColor color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        border: Border.all(color: color.shade300),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color.shade700),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransferRiskChip(BuildContext context, TransferRiskSummary risk) {
+    Color bg;
+    Color border;
+    Color fg;
+    IconData icon;
+    String text;
+
+    switch (risk.overallLevel) {
+      case TransferRiskLevel.high:
+        bg = Colors.red.withOpacity(0.12);
+        border = Colors.red.withOpacity(0.4);
+        fg = Colors.red.shade700;
+        icon = Icons.warning_amber_rounded;
+        text = I18n.t(context, "transfer_risk_high", {"min": "${risk.minEffectiveBufferMin}"});
+        break;
+      case TransferRiskLevel.medium:
+        bg = Colors.orange.withOpacity(0.12);
+        border = Colors.orange.withOpacity(0.4);
+        fg = Colors.orange.shade800;
+        icon = Icons.schedule;
+        text = I18n.t(context, "transfer_risk_medium", {"min": "${risk.minEffectiveBufferMin}"});
+        break;
+      case TransferRiskLevel.low:
+      case TransferRiskLevel.none:
+        bg = Colors.green.withOpacity(0.10);
+        border = Colors.green.withOpacity(0.35);
+        fg = Colors.green.shade700;
+        icon = Icons.check_circle_outline;
+        text = I18n.t(context, "transfer_risk_low", {"min": "${risk.minEffectiveBufferMin}"});
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: fg),
+          const SizedBox(width: 3),
+          Text(
+            text,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegProportionBar(BuildContext context, List<LegSegmentShare> segments) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 6,
+            child: Row(
+              children: [
+                for (int i = 0; i < segments.length; i++) ...[
+                  Expanded(
+                    flex: (segments[i].ratio * 1000).round().clamp(40, 1000),
+                    child: Container(
+                      color: segments[i].isWalk
+                          ? Colors.grey.withOpacity(0.45)
+                          : segments[i].color,
+                    ),
+                  ),
+                  if (i < segments.length - 1) const SizedBox(width: 2),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 2,
+          children: [
+            for (final seg in segments)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: seg.isWalk ? Colors.grey : seg.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    seg.isWalk ? "🚶 ${seg.label}" : seg.label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineTransferBanner(BuildContext context, LegTransferRisk tr) {
+    final isHigh = tr.level == TransferRiskLevel.high;
+    final isMed = tr.level == TransferRiskLevel.medium;
+    final color = isHigh
+        ? Colors.red
+        : (isMed ? Colors.orange : Colors.green);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isHigh
+                ? Icons.warning_amber_rounded
+                : (isMed ? Icons.transfer_within_a_station : Icons.check_circle_outline),
+            size: 15,
+            color: color.shade700,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              I18n.t(context, "transfer_detail_banner", {
+                "station": tr.stationName,
+                "min": "${tr.effectiveBufferMin}",
+              }),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: color.shade800,
+              ),
+            ),
+          ),
+          if (tr.samePlatform)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                I18n.t(context, "transfer_same_platform"),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

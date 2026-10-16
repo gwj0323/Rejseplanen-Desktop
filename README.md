@@ -19,10 +19,14 @@ It integrates directly with the official [Rejseplanen REST API](https://labs.rej
 ### Features
 
 - **Route Planning**: Search journeys with departure/arrival time filters, transit mode selection, platform numbers, walking transfers, and live delay info.
-- **Intermediate Stops**: Tap any leg of a trip to see all stops along the route, scheduled vs. actual arrival times, and platform changes.
-- **Live Departure Boards**: Real-time station departure and arrival boards with delay alerts, track changes, and 30-second auto-refresh.
-- **Trip Notifications**: Alerts for departure, transfers, and approaching your stop, plus an ongoing status notification showing your next stop and ETA.
-- **Calendar Export**: Export trips to Apple Calendar or Google Calendar with one click.
+- **Smart Commute & Preference Learning (On-Device ML)**:
+  - Predicts your likely destination and return commute based on time-of-day circular Gaussian kernels, weekday habits, recency decay, and GPS proximity.
+  - Learns your personal transit preferences (duration, transfers, walking, Metro/S-tog/Train/Bus) and highlights the `⚡ Smart Pick` with a one-tap `Smart Rank` sort toggle.
+  - **Transfer Risk Analyzer**: Evaluates real-time delays, walking transfers, and platform changes to warn about tight or risky connections.
+- **Intermediate Stops & Visual Proportions**: Tap any leg to see all stops along the route, or glance at the proportional colored leg duration bar on each card.
+- **Live Departure Boards**: Real-time station departure and arrival boards with delay alerts, track changes, 30-second auto-refresh, and smart station recommendations based on your schedule.
+- **Trip Notifications & Quick Alight Alarm**: Alerts for departure, transfers, and a 1-tap `Alight Alarm (-5m)` before arrival, plus a live ongoing notification card showing your current leg, next stop, and ETA.
+- **Calendar Export & Itinerary Sharing**: Export trips to Apple/Google Calendar or copy a formatted trip summary with 1 tap.
 - **Nearby Stops**: Find bus, train, and metro stops near your current location.
 - **Themes, Nav Styles & Languages**: English, Danish, and Chinese. Supports dark mode, Material You dynamic colors, custom hex accent colors, and switchable bottom navigation bar styles (floating frosted glass bar with sliding capsule or classic Material 3).
 - **In-App Update Check**: Check for new GitHub releases directly from the Settings screen.
@@ -91,13 +95,17 @@ Spor 是一款开源的丹麦公共交通出行客户端，支持 Android、iOS 
 
 ### 功能
 
-- **行程规划**：起终点路线规划，支持按出发/到达时间筛选、多交通方式过滤，提供站台号、换乘步行引导与实时晚点状态。
+- **行程规划**：起终点路线规划，支持按出发/到达时间筛选、多交通方式过滤，提供站台号、换乘步行引导与实时晚点状态，并配有彩色分段耗时比例条。
+- **端侧智能通勤感知与偏好排序**：
+  - **智能通勤预测**：结合周期时间核函数、星期规律、历史频次衰减与当前 GPS 位置，自动预测出发/返程路线。
+  - **乘车方案偏好学习**：根据日常选车行为在线学习个人偏好（耗时、少换乘、少步行、Metro/S-tog/火车倾向），自动标识 `⚡ 智能首选` 并支持按智能推荐排序。
+  - **换乘风险评估**：结合前序车次实时晚点与站台变更，自动预警紧凑或高风险换乘。
 - **经停站时刻轴 (JourneyDetail)**：点击车次展开沿途完整经停站列表、计划到发时间与实际站台。
-- **实时大屏**：各大车站发车与到达时刻表，显示晚点、停运与站台变更，支持 30 秒自动刷新。
-- **行程通知**：
-  - 发车、换乘与到站提醒，通知栏推送避免坐过站。
+- **实时大屏**：各大车站发车与到达时刻表，显示晚点、停运与站台变更，支持 30 秒自动刷新及按时段智能推荐常看站点。
+- **行程通知与一键下车闹钟**：
+  - 发车、换乘提醒及一键开启「到站前 5 分钟下车提醒」。
   - 行程常驻动态卡片：乘车期间在通知栏按当前乘车进度实时更新下一站与预计到达时间。
-- **日历导出**：一键将所选班次导出至 Apple Calendar 或 Google Calendar，包含换乘步骤与站台备注。
+- **日历导出与行程分享**：一键将所选班次导出至系统日历，或一键复制带站台号与车次的行程文本摘要。
 - **附近站点**：利用 GPS 查找周边公交站与火车站，记录搜索历史。
 - **多语言与外观**：支持中文、英文、丹麦语；支持深色模式、Material You 动态取色及自定义强调色；底栏支持悬浮毛玻璃（支持手势左右滑动切换）与 Material 3 经典样式切换。
 - **应用内检查更新**：在设置页点击版本卡片即可对比 GitHub Release 最新版本并跳转下载。
