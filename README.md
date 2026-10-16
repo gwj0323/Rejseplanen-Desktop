@@ -8,6 +8,7 @@
 [![Build iOS IPA](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml/badge.svg)](https://github.com/gwj0323/spor-app/actions/workflows/build-ios.yml)
 
 ---
+<img width="1024" height="500" alt="spor_feature_graphic_1024x500" src="https://github.com/user-attachments/assets/fbef798e-a80f-4849-870d-b24aa5450f40" />
 
 <a name="english"></a>
 ## English
