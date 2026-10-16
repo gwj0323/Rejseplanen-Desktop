@@ -1,4 +1,4 @@
-# Spor 🇩🇰
+# Spor
 
 [English](#english) | [中文说明](#中文)
 
