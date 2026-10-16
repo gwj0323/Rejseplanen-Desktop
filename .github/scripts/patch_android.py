@@ -174,20 +174,36 @@ def patch():
 
         # Upgrade Java & JVM target to 17
         content = re.sub(
-            r'sourceCompatibility\s*=?\s*JavaVersion\.VERSION_[0-9_]+',
+            r'sourceCompatibility\s*=?\s*[^\r\n]+',
             'sourceCompatibility = JavaVersion.VERSION_17',
             content
         )
         content = re.sub(
-            r'targetCompatibility\s*=?\s*JavaVersion\.VERSION_[0-9_]+',
+            r'targetCompatibility\s*=?\s*[^\r\n]+',
             'targetCompatibility = JavaVersion.VERSION_17',
             content
         )
-        content = re.sub(
-            r'jvmTarget\s*=\s*[\'"][^\'"]+[\'"]',
-            "jvmTarget = '17'",
-            content
-        )
+        if "jvmTarget" in content:
+            content = re.sub(
+                r'jvmTarget\s*=\s*[^\r\n]+',
+                "jvmTarget = '17'",
+                content
+            )
+        elif "kotlinOptions {" in content:
+            content = content.replace("kotlinOptions {", "kotlinOptions {\n        jvmTarget = '17'")
+        else:
+            content += "\nandroid.kotlinOptions {\n    jvmTarget = '17'\n}\n"
+
+        # Explicitly enforce JVM 17 on all KotlinCompile tasks
+        kotlin_compile_block = """
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+"""
+        if "tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile)" not in content:
+            content += kotlin_compile_block
         # Enable core library desugaring for flutter_local_notifications
         if "coreLibraryDesugaringEnabled" not in content:
             if "compileOptions {" in content:
