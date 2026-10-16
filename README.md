@@ -52,7 +52,7 @@ The app ships with offline mock data enabled out of the box. To query live trans
 
 #### Mobile (Flutter)
 
-Located in `rejseplanen_mobile/`. Requires Flutter 3.22+:
+Located in `rejseplanen_mobile/`. Requires Flutter 3.27+:
 
 ```bash
 cd rejseplanen_mobile
@@ -129,7 +129,7 @@ Spor 是一款开源的丹麦公共交通出行客户端，支持 Android、iOS 
 
 #### 移动端 (Flutter)
 
-代码位于 `rejseplanen_mobile/`。需要 Flutter 3.22+：
+代码位于 `rejseplanen_mobile/`。需要 Flutter 3.27+：
 
 ```bash
 cd rejseplanen_mobile

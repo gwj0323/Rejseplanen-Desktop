@@ -37,7 +37,7 @@
 
 ## 本地运行与构建
 
-需要 [Flutter 3.22+](https://flutter.dev/)：
+需要 [Flutter 3.27+](https://flutter.dev/)：
 
 ```bash
 # 获取依赖
