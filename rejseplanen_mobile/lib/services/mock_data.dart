@@ -318,7 +318,7 @@ class MockData {
 
     return [
       TripProposal(
-        idx: "1",
+        idx: "${originId}_${destId}_${dStr}_${t(5)}_1",
         durationMin: 18,
         depTime: t(5),
         arrTime: t(23),
@@ -367,7 +367,7 @@ class MockData {
         ],
       ),
       TripProposal(
-        idx: "2",
+        idx: "${originId}_${destId}_${dStr}_${t(15)}_2",
         durationMin: 22,
         depTime: t(15),
         arrTime: t(37),
@@ -396,7 +396,7 @@ class MockData {
         ],
       ),
       TripProposal(
-        idx: "3",
+        idx: "${originId}_${destId}_${dStr}_${t(28)}_3",
         durationMin: 26,
         depTime: t(28),
         arrTime: t(54),

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,14 +17,61 @@ class MainNavigation extends StatefulWidget {
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _MainNavigationState extends State<MainNavigation>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+
+  late final AnimationController _dropletController;
+  double _fromIndex = 0.0;
+  double _toIndex = 0.0;
+  double? _dragIndex;
 
   final List<Widget> _screens = const [
     TripScreen(),
     BoardScreen(),
     FavoritesScreen(),
     SettingsScreen(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _dropletController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+  }
+
+  @override
+  void dispose() {
+    _dropletController.dispose();
+    super.dispose();
+  }
+
+  void _selectTab(int idx) {
+    if (idx == _currentIndex && _dragIndex == null) return;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _fromIndex = _currentAnimatedIndex;
+      _toIndex = idx.toDouble();
+      _currentIndex = idx;
+      _dragIndex = null;
+    });
+    _dropletController.forward(from: 0.0);
+  }
+
+  double get _currentAnimatedIndex {
+    if (_dragIndex != null) return _dragIndex!;
+    final t = Curves.easeOutBack.transform(_dropletController.value);
+    return ui.lerpDouble(_fromIndex, _toIndex, t) ?? _currentIndex.toDouble();
+  }
+
+  /// Saturation matrix (boosts saturation ~1.35x like iOS UIVisualEffectView vibrancy)
+  static const List<double> _vibrancyMatrix = <double>[
+    1.24, -0.18, -0.06, 0, 4,
+    -0.08, 1.20, -0.12, 0, 4,
+    -0.08, -0.18, 1.26, 0, 4,
+    0, 0, 0, 1, 0,
   ];
 
   @override
@@ -36,7 +84,7 @@ class _MainNavigationState extends State<MainNavigation> {
       onPopInvoked: (didPop) {
         if (didPop) return;
         if (_currentIndex != 0) {
-          setState(() => _currentIndex = 0);
+          _selectTab(0);
         }
       },
       child: Scaffold(
@@ -55,9 +103,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget _buildMaterial3Bar(BuildContext context) {
     return NavigationBar(
       selectedIndex: _currentIndex,
-      onDestinationSelected: (idx) {
-        setState(() => _currentIndex = idx);
-      },
+      onDestinationSelected: _selectTab,
       destinations: [
         NavigationDestination(
           icon: const Icon(Icons.directions_transit_outlined),
@@ -112,43 +158,9 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
     ];
 
-    const double pillRadius = 33.0;
-
-    // Specular gradient border imitating light reflecting off glass curvature
-    final borderGradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: isDark
-          ? [
-              Colors.white.withOpacity(0.48),
-              Colors.white.withOpacity(0.14),
-              Colors.white.withOpacity(0.04),
-            ]
-          : [
-              Colors.white.withOpacity(0.85),
-              Colors.white.withOpacity(0.35),
-              Colors.white.withOpacity(0.12),
-            ],
-      stops: const [0.0, 0.45, 1.0],
-    );
-
-    // Highly translucent, refractive glass fill gradient (transparent enough for backdrop to show)
-    final fillGradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: isDark
-          ? [
-              Colors.white.withOpacity(0.12),
-              const Color(0xFF0F172A).withOpacity(0.20),
-              const Color(0xFF1E293B).withOpacity(0.28),
-            ]
-          : [
-              Colors.white.withOpacity(0.32),
-              Colors.white.withOpacity(0.12),
-              Colors.white.withOpacity(0.22),
-            ],
-      stops: const [0.0, 0.55, 1.0],
-    );
+    const double barHeight = 68.0;
+    const double pillRadius = 34.0;
+    const double innerHorizontalPad = 6.0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -158,156 +170,197 @@ class _MainNavigationState extends State<MainNavigation> {
         bottomPadding > 0 ? bottomPadding + 6 : 16,
       ),
       child: Container(
-        height: 66,
+        height: barHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(pillRadius),
           boxShadow: [
+            // Deep ambient elevation shadow
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.32 : 0.07),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-              spreadRadius: -2,
-            ),
-            BoxShadow(
-              color: primaryColor.withOpacity(isDark ? 0.14 : 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(isDark ? 0.45 : 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
               spreadRadius: -4,
+            ),
+            // Subtle colored caustic glow beneath the glass
+            BoxShadow(
+              color: primaryColor.withOpacity(isDark ? 0.22 : 0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+              spreadRadius: -6,
             ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(pillRadius),
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-            child: CustomPaint(
-              painter: GlassBorderPainter(
-                strokeWidth: 1.5,
-                radius: pillRadius,
-                gradient: borderGradient,
+            // Combine vibrancy saturation boost with deep Gaussian blur
+            filter: ui.ImageFilter.compose(
+              outer: ui.ImageFilter.blur(
+                sigmaX: 28.0,
+                sigmaY: 28.0,
+                tileMode: TileMode.mirror,
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(pillRadius),
-                  gradient: fillGradient,
-                ),
-                child: Stack(
-                  children: [
-                    // Top interior specular curvature sheen
-                    Positioned(
-                      top: 1,
-                      left: 24,
-                      right: 24,
-                      height: 1.2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0.0),
-                              Colors.white.withOpacity(isDark ? 0.35 : 0.70),
-                              Colors.white.withOpacity(0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Navigation items row
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Row(
-                        children: List.generate(navItems.length, (idx) {
-                          final item = navItems[idx];
-                          final isSelected = _currentIndex == idx;
+              inner: const ColorFilter.matrix(_vibrancyMatrix),
+            ),
+            child: CustomPaint(
+              // Background optical layer (sub-surface scattering & top curvature sheen)
+              painter: LiquidGlassShellPainter(
+                radius: pillRadius,
+                isDark: isDark,
+                accentColor: primaryColor,
+                isForeground: false,
+              ),
+              // Foreground optical layer (Fresnel specular rim & inner lip refraction)
+              foregroundPainter: LiquidGlassShellPainter(
+                radius: pillRadius,
+                isDark: isDark,
+                accentColor: primaryColor,
+                isForeground: true,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth - innerHorizontalPad * 2;
+                  final tabWidth = totalWidth / navItems.length;
 
-                          return Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                if (_currentIndex != idx) {
-                                  HapticFeedback.lightImpact();
-                                  setState(() => _currentIndex = idx);
-                                }
-                              },
-                              child: Center(
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeOutCubic,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isSelected ? 14 : 8,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(22),
-                                    gradient: isSelected
-                                        ? LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              primaryColor.withOpacity(isDark ? 0.28 : 0.16),
-                                              primaryColor.withOpacity(isDark ? 0.12 : 0.07),
-                                            ],
-                                          )
-                                        : null,
-                                    border: isSelected
-                                        ? Border.all(
-                                            color: primaryColor.withOpacity(isDark ? 0.40 : 0.25),
-                                            width: 1.0,
-                                          )
-                                        : null,
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: primaryColor.withOpacity(isDark ? 0.20 : 0.08),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      AnimatedScale(
-                                        scale: isSelected ? 1.10 : 1.0,
-                                        duration: const Duration(milliseconds: 200),
-                                        curve: Curves.easeOutBack,
-                                        child: Icon(
-                                          isSelected ? item.activeIcon : item.icon,
-                                          size: 22,
-                                          color: isSelected
-                                              ? primaryColor
-                                              : (isDark ? Colors.white60 : const Color(0xFF64748B)),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      AnimatedDefaultTextStyle(
-                                        duration: const Duration(milliseconds: 200),
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                          color: isSelected
-                                              ? primaryColor
-                                              : (isDark ? Colors.white60 : const Color(0xFF64748B)),
-                                          letterSpacing: 0.1,
-                                        ),
-                                        child: Text(
-                                          item.label,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: (details) {
+                      _dropletController.stop();
+                      final localX = (details.localPosition.dx - innerHorizontalPad)
+                          .clamp(0.0, totalWidth);
+                      setState(() {
+                        _dragIndex = (localX / tabWidth - 0.5)
+                            .clamp(0.0, (navItems.length - 1).toDouble());
+                      });
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      final localX = (details.localPosition.dx - innerHorizontalPad)
+                          .clamp(0.0, totalWidth);
+                      final newDragIdx = (localX / tabWidth - 0.5)
+                          .clamp(0.0, (navItems.length - 1).toDouble());
+                      final nearestTab = newDragIdx.round();
+                      if (nearestTab != _currentIndex) {
+                        HapticFeedback.selectionClick();
+                        _currentIndex = nearestTab;
+                      }
+                      setState(() {
+                        _dragIndex = newDragIdx;
+                      });
+                    },
+                    onHorizontalDragEnd: (_) {
+                      final target = (_dragIndex ?? _currentIndex.toDouble()).round();
+                      setState(() {
+                        _fromIndex = _dragIndex ?? _currentIndex.toDouble();
+                        _toIndex = target.toDouble();
+                        _currentIndex = target;
+                        _dragIndex = null;
+                      });
+                      _dropletController.forward(from: 0.0);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: innerHorizontalPad),
+                      child: AnimatedBuilder(
+                        animation: _dropletController,
+                        builder: (context, _) {
+                          final animIdx = _currentAnimatedIndex;
+                          // Calculate liquid stretch deformation during movement
+                          final rawProgress = _dropletController.isAnimating
+                              ? _dropletController.value
+                              : (_dragIndex != null ? 0.35 : 0.0);
+                          final distance = (_toIndex - _fromIndex).abs().clamp(1.0, 2.2);
+                          final stretchWave = math.sin(rawProgress * math.pi);
+                          final scaleX = 1.0 + 0.22 * stretchWave * (distance * 0.7);
+                          final scaleY = 1.0 - 0.07 * stretchWave;
+
+                          final dropletLeft = (animIdx * tabWidth).clamp(
+                            0.0,
+                            totalWidth - tabWidth,
+                          );
+
+                          return Stack(
+                            alignment: Alignment.centerLeft,
+                            children: [
+                              // 1. Sliding & Morphing 3D Liquid Glass Lens Droplet
+                              Positioned(
+                                left: dropletLeft,
+                                top: 6,
+                                bottom: 6,
+                                width: tabWidth,
+                                child: Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.diagonal3Values(scaleX, scaleY, 1.0),
+                                  child: CustomPaint(
+                                    painter: LiquidDropletLensPainter(
+                                      isDark: isDark,
+                                      primaryColor: primaryColor,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+
+                              // 2. Interactive Tab Icons & Labels
+                              Row(
+                                children: List.generate(navItems.length, (idx) {
+                                  final item = navItems[idx];
+                                  final proximity =
+                                      (1.0 - (animIdx - idx).abs()).clamp(0.0, 1.0);
+
+                                  final inactiveColor = isDark
+                                      ? Colors.white.withOpacity(0.68)
+                                      : const Color(0xFF475569);
+                                  final itemColor = Color.lerp(
+                                    inactiveColor,
+                                    primaryColor,
+                                    proximity,
+                                  )!;
+
+                                  return Expanded(
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () => _selectTab(idx),
+                                      child: SizedBox(
+                                        height: barHeight,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Transform.scale(
+                                              scale: 1.0 + 0.12 * proximity,
+                                              child: Icon(
+                                                proximity > 0.5
+                                                    ? item.activeIcon
+                                                    : item.icon,
+                                                size: 22,
+                                                color: itemColor,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              item.label,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: proximity > 0.5
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                                color: itemColor,
+                                                letterSpacing: 0.1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
                           );
-                        }),
+                        },
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -317,35 +370,220 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-/// CustomPainter that renders a smooth gradient stroke border around a rounded rectangle
-class GlassBorderPainter extends CustomPainter {
-  final double strokeWidth;
+/// Renders the outer capsule's optical glass layers:
+/// - Background pass (`isForeground == false`): sub-surface translucent tint + curved top reflection arc.
+/// - Foreground pass (`isForeground == true`): multi-stop Fresnel specular rim + inner concave lip highlight.
+class LiquidGlassShellPainter extends CustomPainter {
   final double radius;
-  final Gradient gradient;
+  final bool isDark;
+  final Color accentColor;
+  final bool isForeground;
 
-  GlassBorderPainter({
-    required this.strokeWidth,
+  LiquidGlassShellPainter({
     required this.radius,
-    required this.gradient,
+    required this.isDark,
+    required this.accentColor,
+    required this.isForeground,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(
-      strokeWidth / 2,
-      strokeWidth / 2,
-      size.width - strokeWidth,
-      size.height - strokeWidth,
-    );
+    final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..shader = gradient.createShader(rect);
 
-    canvas.drawRRect(rrect, paint);
+    if (!isForeground) {
+      // 1. Sub-surface refractive tint fill
+      final fillPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = ui.Gradient.linear(
+          rect.topLeft,
+          rect.bottomRight,
+          isDark
+              ? [
+                  Colors.white.withOpacity(0.14),
+                  const Color(0xFF0F172A).withOpacity(0.42),
+                  const Color(0xFF1E293B).withOpacity(0.52),
+                ]
+              : [
+                  Colors.white.withOpacity(0.58),
+                  Colors.white.withOpacity(0.28),
+                  Colors.white.withOpacity(0.44),
+                ],
+          const [0.0, 0.52, 1.0],
+        );
+      canvas.drawRRect(rrect, fillPaint);
+
+      // 2. Upper half curved sky reflection band
+      final upperRect = Rect.fromLTWH(0, 0, size.width, size.height * 0.48);
+      final skyPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = ui.Gradient.linear(
+          upperRect.topCenter,
+          upperRect.bottomCenter,
+          [
+            Colors.white.withOpacity(isDark ? 0.14 : 0.42),
+            Colors.white.withOpacity(0.0),
+          ],
+        );
+      canvas.save();
+      canvas.clipRRect(rrect);
+      canvas.drawRect(upperRect, skyPaint);
+      canvas.restore();
+      return;
+    }
+
+    // Foreground Pass: Drawn ON TOP of children so rim light is crisp and unobstructed
+    // 1. Inner concave shadow at bottom edge for 3D glass thickness
+    final innerBottomShadow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..shader = ui.Gradient.linear(
+        rect.topCenter,
+        rect.bottomCenter,
+        [
+          Colors.transparent,
+          Colors.black.withOpacity(isDark ? 0.30 : 0.08),
+        ],
+        const [0.65, 1.0],
+      );
+    canvas.drawRRect(rrect.deflate(1.0), innerBottomShadow);
+
+    // 2. Diagonal Fresnel Specular Rim Light (Bright top-left & bottom-right bounce)
+    final rimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..shader = ui.Gradient.linear(
+        rect.topLeft,
+        rect.bottomRight,
+        isDark
+            ? [
+                Colors.white.withOpacity(0.75),
+                Colors.white.withOpacity(0.18),
+                accentColor.withOpacity(0.15),
+                Colors.white.withOpacity(0.42),
+              ]
+            : [
+                Colors.white.withOpacity(0.95),
+                Colors.white.withOpacity(0.35),
+                accentColor.withOpacity(0.18),
+                Colors.white.withOpacity(0.75),
+              ],
+        const [0.0, 0.35, 0.70, 1.0],
+      );
+    canvas.drawRRect(rrect.deflate(0.75), rimPaint);
+
+    // 3. Top crest intense specular glare line
+    final crestRect = Rect.fromLTWH(size.width * 0.08, 1.2, size.width * 0.84, 1.4);
+    final crestPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        crestRect.centerLeft,
+        crestRect.centerRight,
+        [
+          Colors.white.withOpacity(0.0),
+          Colors.white.withOpacity(isDark ? 0.65 : 0.95),
+          Colors.white.withOpacity(0.0),
+        ],
+        const [0.0, 0.5, 1.0],
+      );
+    canvas.drawRect(crestRect, crestPaint);
   }
 
   @override
-  bool shouldRepaint(covariant GlassBorderPainter oldDelegate) => false;
+  bool shouldRepaint(covariant LiquidGlassShellPainter oldDelegate) =>
+      oldDelegate.isDark != isDark ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.radius != radius ||
+      oldDelegate.isForeground != isForeground;
+}
+
+/// Renders the sliding convex 3D liquid droplet lens behind the active tab
+class LiquidDropletLensPainter extends CustomPainter {
+  final bool isDark;
+  final Color primaryColor;
+
+  LiquidDropletLensPainter({
+    required this.isDark,
+    required this.primaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final radius = size.height / 2;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+    // 1. Soft outer glow of the liquid droplet
+    final glowPaint = Paint()
+      ..color = primaryColor.withOpacity(isDark ? 0.24 : 0.14)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawRRect(rrect.deflate(2), glowPaint);
+
+    // 2. Convex droplet body fill (glassy primary tint + bright top)
+    final bodyPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        rect.topCenter,
+        rect.bottomCenter,
+        isDark
+            ? [
+                Colors.white.withOpacity(0.24),
+                primaryColor.withOpacity(0.28),
+                primaryColor.withOpacity(0.16),
+              ]
+            : [
+                Colors.white.withOpacity(0.88),
+                Color.lerp(Colors.white, primaryColor, 0.16)!.withOpacity(0.72),
+                Color.lerp(Colors.white, primaryColor, 0.24)!.withOpacity(0.62),
+              ],
+        const [0.0, 0.5, 1.0],
+      );
+    canvas.drawRRect(rrect, bodyPaint);
+
+    // 3. Top convex lens highlight dome (simulating curved water droplet surface)
+    final domeRect = Rect.fromLTWH(
+      size.width * 0.12,
+      2.0,
+      size.width * 0.76,
+      size.height * 0.38,
+    );
+    final domeRRect = RRect.fromRectAndRadius(domeRect, Radius.circular(radius));
+    final domePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        domeRect.topCenter,
+        domeRect.bottomCenter,
+        [
+          Colors.white.withOpacity(isDark ? 0.42 : 0.90),
+          Colors.white.withOpacity(0.0),
+        ],
+      );
+    canvas.drawRRect(domeRRect, domePaint);
+
+    // 4. Crisp Fresnel rim around the droplet lens
+    final rimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..shader = ui.Gradient.linear(
+        rect.topLeft,
+        rect.bottomRight,
+        isDark
+            ? [
+                Colors.white.withOpacity(0.75),
+                primaryColor.withOpacity(0.45),
+                Colors.white.withOpacity(0.30),
+              ]
+            : [
+                Colors.white,
+                primaryColor.withOpacity(0.32),
+                Colors.white.withOpacity(0.85),
+              ],
+        const [0.0, 0.55, 1.0],
+      );
+    canvas.drawRRect(rrect.deflate(0.6), rimPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant LiquidDropletLensPainter oldDelegate) =>
+      oldDelegate.isDark != isDark || oldDelegate.primaryColor != primaryColor;
 }

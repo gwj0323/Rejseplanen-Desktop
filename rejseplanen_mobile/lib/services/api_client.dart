@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../models/station.dart';
 import '../models/departure.dart';
 import '../models/trip.dart';
+import '../i18n/translations.dart';
 import 'mock_data.dart';
 import 'location_service.dart';
 
@@ -21,7 +22,7 @@ class RejseplanenApiClient {
   final AppConfig config;
   static final http.Client _client = http.Client();
 
-  final Map<String, String> _stationIdCache = {
+  static final Map<String, String> _stationIdCache = {
     "8600626": "A=1@O=København H@X=12565562@Y=55673063@U=86@L=8600626@p=1791796388@",
     "København H": "A=1@O=København H@X=12565562@Y=55673063@U=86@L=8600626@p=1791796388@",
     "8600646": "A=1@O=Nørreport St.@X=12571801@Y=55683455@U=86@L=8600646@p=1791796388@",
@@ -152,9 +153,10 @@ class RejseplanenApiClient {
   Future<Map<String, dynamic>> testConnection({String? apiKey, String? baseUrl}) async {
     final key = (apiKey ?? config.apiKey).trim();
     final url = (baseUrl ?? config.baseUrl).replaceAll(RegExp(r'/+$'), '');
+    final lang = config.effectiveLanguage;
 
     if (key.isEmpty) {
-      return {"success": false, "message": "API Key (accessId) 为空，请先输入密钥！"};
+      return {"success": false, "message": I18n.tr("conn_test_empty_key", lang)};
     }
 
     final uri = Uri.parse("$url/location.name").replace(queryParameters: {
@@ -166,29 +168,50 @@ class RejseplanenApiClient {
     try {
       final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
+        try {
+          final data = jsonDecode(resp.body);
+          final rawItems = data["stopLocationOrCoordLocation"] as List? ?? [];
+          if (rawItems.isNotEmpty) {
+            final firstStop = rawItems[0]["StopLocation"] ?? rawItems[0]["CoordLocation"] ?? {};
+            final sampleName = firstStop["name"]?.toString() ?? "København H";
+            return {
+              "success": true,
+              "message": I18n.tr("conn_test_success", lang, {
+                "count": "${rawItems.length}",
+                "sample": sampleName,
+              })
+            };
+          }
+        } catch (_) {}
         return {
           "success": true,
-          "message": "API 认证成功！Rejseplanen 官方服务器响应正常 (HTTP 200 OK)。"
+          "message": I18n.tr("conn_ok", lang)
         };
       } else {
-        String msg = "HTTP ${resp.statusCode}: ${resp.body}";
-        if (resp.statusCode == 401) {
-          msg += "\n\n提示：401 权限拒绝。请确认 accessId 是否正确，或账号是否已激活 API 2.0。";
-        }
-        return {"success": false, "message": msg};
+        return {
+          "success": false,
+          "message": I18n.tr("conn_test_http_err", lang, {
+            "code": "${resp.statusCode}",
+            "reason": resp.reasonPhrase ?? resp.body,
+          })
+        };
       }
     } catch (e) {
-      return {"success": false, "message": "网络请求失败: $e"};
+      return {
+        "success": false,
+        "message": I18n.tr("conn_test_net_err", lang, {"error": "$e"})
+      };
     }
   }
 
   Future<ApiResult<List<Station>>> searchLocations(String query) async {
     final key = config.apiKey.trim();
+    final lang = config.effectiveLanguage;
     if (key.isEmpty) {
       if (config.mockFallback) {
         return ApiResult(data: MockData.searchStations(query), isMock: true);
       }
-      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
+      return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_key_no_mock", lang));
     }
 
     try {
@@ -235,11 +258,12 @@ class RejseplanenApiClient {
     if (config.mockFallback) {
       return ApiResult(data: MockData.searchStations(query), isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "未找到相关站点");
+    return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_stations", lang));
   }
 
   Future<ApiResult<List<Station>>> nearbyStops(double lat, double lon, {int maxNo = 15, int radiusMeters = 10000}) async {
     final bool userInDenmark = LocationService.isInDenmark(lat, lon);
+    final lang = config.effectiveLanguage;
 
     // If user is clearly outside Denmark (e.g. testing from China or outside Nordic region)
     if (!userInDenmark) {
@@ -290,7 +314,7 @@ class RejseplanenApiClient {
         }).toList();
         return ApiResult(data: withDist, isMock: true);
       }
-      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
+      return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_key_no_mock", lang));
     }
 
     try {
@@ -356,8 +380,7 @@ class RejseplanenApiClient {
       }).toList();
       return ApiResult(data: withDist, isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "未找到周边站点");
-
+    return ApiResult(data: [], isMock: false, error: I18n.tr("station_empty_nearby", lang));
   }
 
   Future<ApiResult<List<Departure>>> getDepartureBoard(
@@ -369,11 +392,12 @@ class RejseplanenApiClient {
     bool useMetro = true,
   }) async {
     final key = config.apiKey.trim();
+    final lang = config.effectiveLanguage;
     if (key.isEmpty) {
       if (config.mockFallback) {
         return ApiResult(data: MockData.getDepartures(stationId), isMock: true);
       }
-      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
+      return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_key_no_mock", lang));
     }
 
     try {
@@ -466,7 +490,7 @@ class RejseplanenApiClient {
     if (config.mockFallback) {
       return ApiResult(data: MockData.getDepartures(stationId), isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "暂无发车信息");
+    return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_departures", lang));
   }
 
   Future<ApiResult<List<Departure>>> getArrivalBoard(
@@ -478,11 +502,12 @@ class RejseplanenApiClient {
     bool useMetro = true,
   }) async {
     final key = config.apiKey.trim();
+    final lang = config.effectiveLanguage;
     if (key.isEmpty) {
       if (config.mockFallback) {
         return ApiResult(data: MockData.getArrivals(stationId), isMock: true);
       }
-      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
+      return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_key_no_mock", lang));
     }
 
     try {
@@ -521,6 +546,15 @@ class RejseplanenApiClient {
           String rtTime = _formatTimeStr(a["rtTime"]?.toString() ?? schedTime);
           int delayMin = _parseTimeDiffMin(schedTime, rtTime);
 
+          String status = "normal";
+          if (a["cancelled"] == true || a["cancelled"] == "true" || a["cancelled"] == "1") {
+            status = "cancelled";
+          } else if (delayMin >= 5) {
+            status = "delayed";
+          } else if (delayMin > 0) {
+            status = "minor_delay";
+          }
+
           final prod = a["ProductAtStop"] ?? {};
           String cat = prod["catOut"]?.toString() ?? a["type"]?.toString() ?? "TOG";
 
@@ -546,10 +580,10 @@ class RejseplanenApiClient {
             time: schedTime,
             date: a["date"]?.toString() ?? "",
             rtTime: rtTime,
-            rtDate: a["date"]?.toString() ?? "",
+            rtDate: a["rtDate"]?.toString() ?? a["date"]?.toString() ?? "",
             track: track,
             delay: delayMin,
-            status: delayMin >= 5 ? "delayed" : (delayMin > 0 ? "minor_delay" : "normal"),
+            status: status,
             messages: a["messages"]?.toString() ?? "",
             journeyDetailRef: jRef,
           ));
@@ -566,7 +600,7 @@ class RejseplanenApiClient {
     if (config.mockFallback) {
       return ApiResult(data: MockData.getArrivals(stationId), isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "暂无到达信息");
+    return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_arrivals", lang));
   }
 
   Future<ApiResult<List<TripProposal>>> getTrips(
@@ -580,11 +614,12 @@ class RejseplanenApiClient {
     bool useMetro = true,
   }) async {
     final key = config.apiKey.trim();
+    final lang = config.effectiveLanguage;
     if (key.isEmpty) {
       if (config.mockFallback) {
         return ApiResult(data: MockData.getTrips(originId, destId), isMock: true);
       }
-      return ApiResult(data: [], isMock: false, error: "未配置 API Key，且已关闭离线演示数据");
+      return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_key_no_mock", lang));
     }
 
     try {
@@ -699,6 +734,7 @@ class RejseplanenApiClient {
 
           String depTime = _formatTimeStr(firstOrigin?["time"]?.toString() ?? "00:00");
           String arrTime = _formatTimeStr(lastDest?["time"]?.toString() ?? "00:00");
+          String depDate = firstOrigin?["date"]?.toString() ?? dateStr ?? "";
           int durationMin = _parseTimeDiffMin(depTime, arrTime);
 
           if (durationMin == 0 && t["duration"] != null) {
@@ -706,7 +742,7 @@ class RejseplanenApiClient {
           }
 
           trips.add(TripProposal(
-            idx: (idx++).toString(),
+            idx: "${originId}_${destId}_${depDate}_${depTime}_${arrTime}_${idx++}",
             durationMin: durationMin,
             depTime: depTime,
             arrTime: arrTime,
@@ -726,7 +762,7 @@ class RejseplanenApiClient {
     if (config.mockFallback) {
       return ApiResult(data: MockData.getTrips(originId, destId), isMock: true);
     }
-    return ApiResult(data: [], isMock: false, error: "未找到推荐路线");
+    return ApiResult(data: [], isMock: false, error: I18n.tr("api_err_no_trips", lang));
   }
 
   /// Query intermediate stops and timetable for a specific vehicle journey (journeyDetail)

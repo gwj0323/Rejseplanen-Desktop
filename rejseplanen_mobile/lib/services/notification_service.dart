@@ -570,12 +570,40 @@ class NotificationService {
     await init();
     await requestPermission();
 
-    // Determine current active or first motorized leg
+    final DateTime now = DateTime.now();
+    final DateTime? tripDate = _parseHafasDate(
+      trip.legs.isNotEmpty ? trip.legs.first.origin.date : null,
+    );
+    final DateTime baseDate = tripDate ?? now;
+    final bool hasExplicitDate = tripDate != null;
+
+    // Determine currently active or next upcoming motorized leg based on current time
     TripLeg? currentLeg;
     for (var leg in trip.legs) {
-      if (!leg.isWalk) {
+      if (leg.isWalk) continue;
+      if (leg.destination.time.isNotEmpty) {
+        final legArrDate = _parseHafasDate(leg.destination.date) ?? baseDate;
+        final arrDt = _parseTripDateTime(
+          leg.destination.time,
+          legArrDate,
+          hasExplicitDate: hasExplicitDate || leg.destination.date.isNotEmpty,
+        );
+        if (arrDt.isAfter(now)) {
+          currentLeg = leg;
+          break;
+        }
+      } else {
         currentLeg = leg;
         break;
+      }
+    }
+    // Fallback to the last non-walk leg or first leg if all leg arrival times have passed
+    if (currentLeg == null) {
+      for (var leg in trip.legs.reversed) {
+        if (!leg.isWalk) {
+          currentLeg = leg;
+          break;
+        }
       }
     }
     currentLeg ??= (trip.legs.isNotEmpty ? trip.legs.first : null);

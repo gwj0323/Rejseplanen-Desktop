@@ -52,6 +52,11 @@ class _TripScreenState extends State<TripScreen> {
     if (widget.initialDest != null) {
       _destination = widget.initialDest!;
     }
+    if (widget.initialOrigin != null && widget.initialDest != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchTrips();
+      });
+    }
   }
 
   Future<void> _autoLocateOrigin() async {

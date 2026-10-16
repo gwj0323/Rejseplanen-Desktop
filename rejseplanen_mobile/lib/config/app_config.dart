@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/station.dart';
 import '../models/trip.dart';
+import '../services/notification_service.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.1.0';
-  static const int appBuildNumber = 17;
+  static const String appVersion = '1.1.1';
+  static const int appBuildNumber = 18;
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
@@ -100,6 +102,7 @@ class AppConfig extends ChangeNotifier {
   TripProposal? _activeOngoingTrip;
   Station? _activeOngoingOrigin;
   Station? _activeOngoingDest;
+  Timer? _ongoingTripTimer;
 
   String? get activeOngoingTripIdx => _activeOngoingTripIdx;
   TripProposal? get activeOngoingTrip => _activeOngoingTrip;
@@ -113,10 +116,23 @@ class AppConfig extends ChangeNotifier {
     _activeOngoingTrip = trip;
     _activeOngoingOrigin = origin;
     _activeOngoingDest = dest;
+    _ongoingTripTimer?.cancel();
+    _ongoingTripTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (_activeOngoingTrip != null && _activeOngoingOrigin != null && _activeOngoingDest != null) {
+        NotificationService().showOngoingTripNotification(
+          trip: _activeOngoingTrip!,
+          origin: _activeOngoingOrigin!,
+          destination: _activeOngoingDest!,
+          lang: effectiveLanguage,
+        );
+      }
+    });
     notifyListeners();
   }
 
   void stopOngoingTrip() {
+    _ongoingTripTimer?.cancel();
+    _ongoingTripTimer = null;
     _activeOngoingTripIdx = null;
     _activeOngoingTrip = null;
     _activeOngoingOrigin = null;
@@ -126,11 +142,18 @@ class AppConfig extends ChangeNotifier {
 
   bool get hasApiKey => _apiKey.trim().isNotEmpty;
 
+  Future<void>? _loadFuture;
+
   AppConfig() {
     loadSettings();
   }
 
-  Future<void> loadSettings() async {
+  Future<void> loadSettings() {
+    _loadFuture ??= _doLoadSettings();
+    return _loadFuture!;
+  }
+
+  Future<void> _doLoadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final standaloneKey = prefs.getString(_keyApiKey);

@@ -675,7 +675,7 @@ class _TripCardState extends State<TripCard> {
                     ),
                   if (stop.track.isNotEmpty && stop.track != '-')
                     Text(
-                      "Spor ${stop.track}",
+                      "${I18n.t(context, "trip_platform")} ${stop.track}",
                       style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                     ),
                 ],
