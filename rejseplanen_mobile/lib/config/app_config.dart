@@ -9,8 +9,11 @@ import '../services/notification_service.dart';
 import '../services/smart_transit_service.dart';
 
 class AppConfig extends ChangeNotifier {
-  static const String appVersion = '1.2.0';
-  static const int appBuildNumber = 21;
+  static const String appVersion = '1.2.1';
+  static const int appBuildNumber = 22;
+  static const String androidPackageName = 'com.spor.mobile';
+  static const String googlePlayUrl = 'https://play.google.com/store/apps/details?id=$androidPackageName';
+  static const String googlePlayMarketUri = 'market://details?id=$androidPackageName';
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';

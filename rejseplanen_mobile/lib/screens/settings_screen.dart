@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
@@ -119,6 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (res.success && res.release != null) {
       final rel = res.release!;
       if (rel.hasUpdate) {
+        final isAndroid = defaultTargetPlatform == TargetPlatform.android;
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -138,6 +140,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     rel.name.isNotEmpty ? rel.name : "Version ${rel.cleanVersion}",
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
+                  if (isAndroid) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      I18n.t(context, "settings_update_play_hint"),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   if (rel.body.trim().isNotEmpty) ...[
                     Container(
@@ -163,10 +176,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  UpdateService.openReleaseUrl(rel.htmlUrl);
+                  UpdateService.openStoreOrReleaseUrl(fallbackUrl: rel.htmlUrl);
                 },
                 icon: const Icon(Icons.open_in_new, size: 16),
-                label: Text(I18n.t(context, "settings_download_update")),
+                label: Text(
+                  isAndroid
+                      ? I18n.t(context, "settings_update_in_store")
+                      : I18n.t(context, "settings_download_update"),
+                ),
               ),
             ],
           ),

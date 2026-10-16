@@ -10,8 +10,6 @@ class ReleaseInfo {
   final String name;
   final String body;
   final String htmlUrl;
-  final String? apkDownloadUrl;
-  final String? ipaDownloadUrl;
   final bool hasUpdate;
 
   ReleaseInfo({
@@ -20,8 +18,6 @@ class ReleaseInfo {
     required this.name,
     required this.body,
     required this.htmlUrl,
-    this.apkDownloadUrl,
-    this.ipaDownloadUrl,
     required this.hasUpdate,
   });
 }
@@ -38,7 +34,7 @@ class UpdateService {
   static const String repoOwner = 'gwj0323';
   static const String repoName = 'spor-app';
 
-  /// Compare two semver strings (e.g. "1.0.3" vs "1.0.2")
+  /// Compare two semver strings (e.g. "1.2.1" vs "1.2.0")
   /// Returns > 0 if v1 > v2, < 0 if v1 < v2, 0 if equal.
   static int compareVersions(String v1, String v2) {
     List<int> parse(String v) {
@@ -58,7 +54,7 @@ class UpdateService {
     return 0;
   }
 
-  /// Checks GitHub Releases for the latest version
+  /// Checks for the latest version metadata
   static Future<UpdateCheckResult> checkUpdate() async {
     try {
       final url = Uri.parse('https://api.github.com/repos/$repoOwner/$repoName/releases/latest');
@@ -76,23 +72,6 @@ class UpdateService {
           final body = data['body']?.toString() ?? '';
           final htmlUrl = data['html_url']?.toString() ?? 'https://github.com/$repoOwner/$repoName/releases';
 
-          String? apkUrl;
-          String? ipaUrl;
-          final assets = data['assets'];
-          if (assets is List) {
-            for (final a in assets) {
-              if (a is Map) {
-                final aname = a['name']?.toString() ?? '';
-                final durl = a['browser_download_url']?.toString();
-                if (aname.endsWith('.apk') && durl != null) {
-                  apkUrl = durl;
-                } else if (aname.endsWith('.ipa') && durl != null) {
-                  ipaUrl = durl;
-                }
-              }
-            }
-          }
-
           final hasUpdate = compareVersions(cleanTag, AppConfig.appVersion) > 0;
 
           return UpdateCheckResult(
@@ -103,8 +82,6 @@ class UpdateService {
               name: name,
               body: body,
               htmlUrl: htmlUrl,
-              apkDownloadUrl: apkUrl,
-              ipaDownloadUrl: ipaUrl,
               hasUpdate: hasUpdate,
             ),
           );
@@ -122,16 +99,40 @@ class UpdateService {
     }
   }
 
-  /// Launch external browser/downloader for release or asset
-  static Future<bool> openReleaseUrl(String url) async {
+  /// Opens Google Play Store on Android to comply with Google Play Device and Network Abuse policy.
+  /// On other platforms, opens the project release page.
+  static Future<bool> openStoreOrReleaseUrl({String? fallbackUrl}) async {
     try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        return await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        return await openGooglePlayStore();
+      } else {
+        final targetUrl = fallbackUrl ?? 'https://github.com/$repoOwner/$repoName/releases';
+        final uri = Uri.parse(targetUrl);
+        if (await canLaunchUrl(uri)) {
+          return await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+        return await launchUrl(uri);
       }
-      return await launchUrl(uri);
     } catch (e) {
       debugPrint('[UpdateService] Launch URL error: $e');
+      return false;
+    }
+  }
+
+  /// Direct to Google Play Store app first, fallback to browser link
+  static Future<bool> openGooglePlayStore() async {
+    try {
+      final marketUri = Uri.parse(AppConfig.googlePlayMarketUri);
+      if (await canLaunchUrl(marketUri)) {
+        return await launchUrl(marketUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+
+    try {
+      final webUri = Uri.parse(AppConfig.googlePlayUrl);
+      return await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('[UpdateService] Launch Google Play URL error: $e');
       return false;
     }
   }
