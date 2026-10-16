@@ -1,13 +1,24 @@
-## v1.2.2 更新内容 / What's New
+## v1.2.3 更新内容 / What's New
+
+### ⚠️ 重要安全与升级说明 (Important Security & Upgrade Notice)
+* **发布签名密钥全面轮换**：为彻底防范供应链与签名冒用风险，本次版本启用了全新的独立正式发布密钥，旧密钥已永久废弃。
+* **升级提示**：由于签名证书更换，已安装 `v1.2.2` 或更早版本的 Android 用户在升级时系统会提示签名不匹配，**请先卸载旧版后再安装 v1.2.3**（安装新版后未来所有版本可恢复正常覆盖升级）。
+
+---
 
 ### 🇨🇳 中文
-- **Google Play 商店更新规范**：移除应用内直接解析与下载外部安装包的逻辑，Android 端检查更新改为通过系统或浏览器直接唤起 Google Play 官方商店页，完全符合 Google Play 设备和网络滥用政策。
-- **关于界面交互精简**：移除卡片上重复的“点击检查新版本”提示与全卡片点击，整合为右上角专属「检查更新」按钮，底栏保留版本号与隐私政策。
-- **应用内隐私政策**：在设置页关于区域新增「隐私政策」跳转入口，方便直接查阅数据安全与权限使用说明。
-- **文案与本地化优化**：更新商店跳转及版本检测的中、英、丹麦三语提示文案。
+- **发布签名安全加固**：淘汰并彻底作废历史构建密钥，全面采用高强度 2048 位独立 RSA 证书通过 GitHub Actions Secrets 加密签名，防范侧载伪造与供应链风险。
+- **CI 流水线最小权限隔离**：收紧 GitHub Actions 工作流全局权限为只读，PR 触发的构建彻底剥离签名材料。
+- **日志敏感信息脱敏**：Release 生产环境静音 `debugPrint` 控制台与 Logcat 输出，移除了所有请求 URL 中关于 `accessId` 以及 GPS 经纬度坐标的日志输出。
+- **UI 与异常防御**：对桌面端富文本显示增加 HTML 转义防护，修复 Artifact 清理边界与目录白名单。
 
 ### 🇬🇧 English
-- **Google Play Compliance**: Aligned update checks with Google Play Device and Network Abuse policies. Android update actions now redirect directly to the official Google Play Store listing.
-- **Streamlined About UI**: Consolidated redundant update prompts into a single, dedicated "Check for Updates" button, keeping the footer focused on Version and Privacy Policy.
-- **In-App Privacy Policy**: Added a direct Privacy Policy link in Settings to comply with Google Play User Data policies.
-- **Copy & Localization Refinements**: Refined update prompts and store actions across English, Chinese, and Danish.
+- **Release Signing Key Rotation**: The release signing certificate has been completely rotated to a fresh, independent 2048-bit RSA key securely managed via GitHub Secrets. (Existing users upgrading from `<=1.2.2` must uninstall the old version first before installing v1.2.3).
+- **CI Least Privilege**: Tightened workflow permissions to read-only; pull request builds are strictly isolated and never touch release signing secrets.
+- **Log Privacy Hardening**: Silenced `debugPrint` in Release mode, fully removing `accessId` tokens and GPS coordinates from system log outputs.
+- **Security & Stability Refinements**: Added HTML escaping to dynamic desktop dialogs, clamped artifact retention bounds, and restricted iOS permissions.
+
+### 🇩🇰 Dansk
+- **Sikkerhedsnøgle-opdatering**: Signeringscertifikatet er blevet udskiftet med en helt ny RSA-nøgle for maksimal sikkerhed. (Brugere med version `<=1.2.2` skal afinstallere den gamle version først).
+- **Log- og databeskyttelse**: Fjernet API-nøgle og GPS-koordinater fra app-logs og slået debug-udskrifter fra i produktionsbyg.
+- **CI-sikkerhed**: Strammet rettigheder i GitHub Actions til læseadgang og isoleret PR-byg fra udgivelsesnøgler.
