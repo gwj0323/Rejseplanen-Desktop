@@ -183,35 +183,25 @@ class _TripCardState extends State<TripCard> {
                 ],
               ),
 
-              // Status & Transfer Risk Row
-              if (risk.overallLevel != TransferRiskLevel.none ||
+              // Status & Transfer Warning Row (only show transfer badge when tight/high risk)
+              if (risk.overallLevel == TransferRiskLevel.high ||
+                  risk.overallLevel == TransferRiskLevel.medium ||
                   config.isTripReminderActive(trip.idx) ||
-                  config.isArrivalAlarmActive(trip.idx) ||
                   config.isOngoingTripActive(trip.idx)) ...[
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: [
-                    if (risk.overallLevel != TransferRiskLevel.none)
+                    if (risk.overallLevel == TransferRiskLevel.high ||
+                        risk.overallLevel == TransferRiskLevel.medium)
                       _buildTransferRiskChip(context, risk),
-                    if (config.isTripReminderActive(trip.idx))
+                    if (config.isTripReminderActive(trip.idx) ||
+                        config.isOngoingTripActive(trip.idx))
                       _buildActiveStatusBadge(
                         icon: Icons.notifications_active,
                         label: I18n.t(context, "trip_reminder_active"),
                         color: Colors.green,
-                      ),
-                    if (config.isArrivalAlarmActive(trip.idx))
-                      _buildActiveStatusBadge(
-                        icon: Icons.alarm_on,
-                        label: I18n.t(context, "trip_quick_arr_active"),
-                        color: Colors.teal,
-                      ),
-                    if (config.isOngoingTripActive(trip.idx))
-                      _buildActiveStatusBadge(
-                        icon: Icons.radar,
-                        label: I18n.t(context, "trip_ongoing_active"),
-                        color: Colors.blue,
                       ),
                   ],
                 ),
@@ -278,136 +268,29 @@ class _TripCardState extends State<TripCard> {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    // 1. Live Ongoing Trip Tracker
+                    // 1. Unified Trip Reminders & Live Status Sheet
                     FilledButton.tonalIcon(
                       style: FilledButton.styleFrom(
-                        backgroundColor: config.isOngoingTripActive(trip.idx)
-                            ? Colors.blue.withOpacity(0.18)
-                            : theme.colorScheme.secondaryContainer.withOpacity(0.55),
-                        foregroundColor: config.isOngoingTripActive(trip.idx)
-                            ? Colors.blue.shade900
-                            : theme.colorScheme.secondary,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      ),
-                      icon: Icon(
-                        config.isOngoingTripActive(trip.idx) ? Icons.radar : Icons.radar_outlined,
-                        size: 17,
-                      ),
-                      label: Text(
-                        config.isOngoingTripActive(trip.idx)
-                            ? I18n.t(context, "trip_ongoing_stop")
-                            : I18n.t(context, "trip_ongoing_start"),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      onPressed: () async {
-                        if (config.isOngoingTripActive(trip.idx)) {
-                          await NotificationService().stopOngoingTripNotification();
-                          config.stopOngoingTrip();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(I18n.t(context, "trip_ongoing_stopped_snack"))),
-                            );
-                          }
-                        } else {
-                          widget.onTripSelected?.call();
-                          config.startOngoingTrip(widget.trip, widget.origin, widget.destination);
-                          await NotificationService().showOngoingTripNotification(
-                            trip: widget.trip,
-                            origin: widget.origin,
-                            destination: widget.destination,
-                            lang: config.effectiveLanguage,
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(I18n.t(context, "trip_ongoing_started_snack"))),
-                            );
-                          }
-                        }
-                      },
-                    ),
-
-                    // 2. 1-Tap Quick Alighting / Arrival Alarm (-5m)
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: config.isArrivalAlarmActive(trip.idx)
-                            ? Colors.teal.withOpacity(0.18)
-                            : theme.colorScheme.tertiaryContainer.withOpacity(0.5),
-                        foregroundColor: config.isArrivalAlarmActive(trip.idx)
-                            ? Colors.teal.shade800
-                            : theme.colorScheme.onSurface,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      ),
-                      icon: Icon(
-                        config.isArrivalAlarmActive(trip.idx)
-                            ? Icons.alarm_on
-                            : Icons.notifications_active_outlined,
-                        size: 17,
-                      ),
-                      label: Text(
-                        config.isArrivalAlarmActive(trip.idx)
-                            ? I18n.t(context, "trip_quick_arr_active")
-                            : I18n.t(context, "trip_quick_arr_alarm"),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      onPressed: () async {
-                        if (config.isArrivalAlarmActive(trip.idx)) {
-                          await NotificationService().cancelQuickArrivalAlarm(
-                            trip: widget.trip,
-                            origin: widget.origin,
-                            destination: widget.destination,
-                          );
-                          config.setArrivalAlarmActive(trip.idx, false);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(I18n.t(context, "trip_quick_arr_off_snack"))),
-                            );
-                          }
-                        } else {
-                          widget.onTripSelected?.call();
-                          final ok = await NotificationService().scheduleQuickArrivalAlarm(
-                            trip: widget.trip,
-                            origin: widget.origin,
-                            destination: widget.destination,
-                            advanceMinutes: 5,
-                            lang: config.effectiveLanguage,
-                          );
-                          if (ok) {
-                            config.setArrivalAlarmActive(trip.idx, true);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    I18n.t(context, "trip_quick_arr_on_snack", {
-                                      "station": widget.destination.name,
-                                    }),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                    ),
-
-                    // 3. Full Scheduled Trip Reminders Sheet
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: config.isTripReminderActive(trip.idx)
+                        backgroundColor: (config.isTripReminderActive(trip.idx) ||
+                                config.isOngoingTripActive(trip.idx))
                             ? Colors.green.withOpacity(0.15)
                             : theme.colorScheme.primaryContainer.withOpacity(0.5),
-                        foregroundColor: config.isTripReminderActive(trip.idx)
+                        foregroundColor: (config.isTripReminderActive(trip.idx) ||
+                                config.isOngoingTripActive(trip.idx))
                             ? Colors.green.shade800
                             : theme.colorScheme.primary,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       ),
                       icon: Icon(
-                        config.isTripReminderActive(trip.idx)
+                        (config.isTripReminderActive(trip.idx) ||
+                                config.isOngoingTripActive(trip.idx))
                             ? Icons.notifications_active
                             : Icons.notifications_outlined,
                         size: 17,
                       ),
                       label: Text(
-                        config.isTripReminderActive(trip.idx)
+                        (config.isTripReminderActive(trip.idx) ||
+                                config.isOngoingTripActive(trip.idx))
                             ? I18n.t(context, "trip_reminder_active")
                             : I18n.t(context, "trip_reminder_btn"),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -423,7 +306,7 @@ class _TripCardState extends State<TripCard> {
                       },
                     ),
 
-                    // 4. 1-Tap Copy / Share Trip Summary
+                    // 2. Copy Trip Summary
                     OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

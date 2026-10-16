@@ -251,11 +251,11 @@ class _TripScreenState extends State<TripScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. On-Device Smart Commute Predictions
+          // 1. Predicted / Frequent Commute Routes
           if (predictedRoutes.isNotEmpty) ...[
             Row(
               children: [
-                Icon(Icons.auto_awesome, size: 18, color: theme.colorScheme.primary),
+                Icon(Icons.history_toggle_off, size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 6),
                 Text(
                   I18n.t(context, "smart_commute_title"),
@@ -264,80 +264,38 @@ class _TripScreenState extends State<TripScreen> {
                     color: theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    I18n.t(context, "smart_commute_subtitle"),
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 10),
             for (final pred in predictedRoutes)
-              Container(
+              Card(
+                elevation: 0,
                 margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primaryContainer.withOpacity(isDark ? 0.25 : 0.40),
-                      theme.colorScheme.surface,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.28),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withOpacity(isDark ? 0.30 : 0.22),
                   ),
                 ),
                 child: ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
-                    child: Icon(Icons.bolt, color: theme.colorScheme.primary, size: 20),
+                    backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                    child: Icon(Icons.directions_transit, color: theme.colorScheme.primary, size: 20),
                   ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          "${pred.origin.name} ➔ ${pred.dest.name}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          I18n.t(context, "smart_confidence_badge", {
-                            "pct": "${(pred.confidence * 100).round()}",
-                          }),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
+                  title: Text(
+                    "${pred.origin.name} ➔ ${pred.dest.name}",
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      I18n.t(context, pred.reasonKey, pred.reasonParams),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
+                  subtitle: Text(
+                    I18n.t(context, pred.reasonKey, pred.reasonParams),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
-                  trailing: Icon(
+                  trailing: const Icon(
                     Icons.arrow_forward_ios,
                     size: 14,
-                    color: theme.colorScheme.primary,
+                    color: Colors.grey,
                   ),
                   onTap: () {
                     setState(() {

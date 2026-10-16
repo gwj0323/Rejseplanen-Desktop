@@ -247,43 +247,18 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
               subtitle: I18n.t(context, "reminder_dep_desc"),
               enabled: _enableDep,
               onToggle: (v) => setState(() => _enableDep = v),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    children: [5, 10, 15].map((mins) {
-                      final selected = _depMinutes == mins;
-                      return ChoiceChip(
-                        label: Text(I18n.t(context, "reminder_min_$mins")),
-                        selected: selected,
-                        onSelected: (val) {
-                          if (val) setState(() => _depMinutes = mins);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.info_outline, size: 14, color: Colors.blueGrey),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            I18n.t(context, "reminder_dep_preview", {"mins": "$_depMinutes"}),
-                            style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: Wrap(
+                spacing: 8,
+                children: [5, 10, 15].map((mins) {
+                  final selected = _depMinutes == mins;
+                  return ChoiceChip(
+                    label: Text(I18n.t(context, "reminder_min_$mins")),
+                    selected: selected,
+                    onSelected: (val) {
+                      if (val) setState(() => _depMinutes = mins);
+                    },
+                  );
+                }).toList(),
               ),
             ),
             const SizedBox(height: 12),
@@ -298,25 +273,6 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                 subtitle: I18n.t(context, "reminder_transfer_desc"),
                 enabled: _enableTransfer,
                 onToggle: (v) => setState(() => _enableTransfer = v),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.swap_horiz, size: 16, color: Colors.deepOrange),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          I18n.t(context, "reminder_transfer_preview"),
-                          style: TextStyle(fontSize: 11, color: Colors.deepOrange.shade900),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -330,46 +286,18 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
               subtitle: I18n.t(context, "reminder_arr_desc"),
               enabled: _enableArr,
               onToggle: (v) => setState(() => _enableArr = v),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    children: [3, 5, 10].map((mins) {
-                      final selected = _arrMinutes == mins;
-                      return ChoiceChip(
-                        label: Text(I18n.t(context, "reminder_min_$mins")),
-                        selected: selected,
-                        onSelected: (val) {
-                          if (val) setState(() => _arrMinutes = mins);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_outline, size: 14, color: Colors.teal),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            I18n.t(context, "reminder_arr_preview", {
-                              "station": widget.destination.name,
-                              "mins": "$_arrMinutes",
-                            }),
-                            style: TextStyle(fontSize: 11, color: Colors.teal.shade900),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: Wrap(
+                spacing: 8,
+                children: [3, 5, 10].map((mins) {
+                  final selected = _arrMinutes == mins;
+                  return ChoiceChip(
+                    label: Text(I18n.t(context, "reminder_min_$mins")),
+                    selected: selected,
+                    onSelected: (val) {
+                      if (val) setState(() => _arrMinutes = mins);
+                    },
+                  );
+                }).toList(),
               ),
             ),
             const SizedBox(height: 12),
@@ -383,25 +311,6 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
               subtitle: I18n.t(context, "trip_ongoing_banner_desc"),
               enabled: _enableOngoingCard,
               onToggle: (v) => setState(() => _enableOngoingCard = v),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 14, color: Colors.blue.shade700),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        I18n.t(context, "trip_ongoing_banner_desc"),
-                        style: TextStyle(fontSize: 11, color: Colors.blue.shade900),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
 
             // Battery Optimization / Background Notification Hint
@@ -489,7 +398,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
     required String subtitle,
     required bool enabled,
     required ValueChanged<bool> onToggle,
-    required Widget child,
+    Widget? child,
   }) {
     return Card(
       elevation: 0.5,
@@ -522,7 +431,7 @@ class _TripReminderSheetState extends State<TripReminderSheet> with WidgetsBindi
                 ),
               ],
             ),
-            if (enabled) ...[
+            if (enabled && child != null) ...[
               const Divider(height: 16),
               child,
             ],

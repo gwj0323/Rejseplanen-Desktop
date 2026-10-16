@@ -361,14 +361,12 @@ class _BoardScreenState extends State<BoardScreen> with SingleTickerProviderStat
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            Icon(Icons.auto_awesome, size: 13, color: theme.colorScheme.primary),
-                            const SizedBox(width: 4),
                             Text(
                               "${I18n.t(context, 'board_smart_stations')}:",
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
+                                color: Colors.grey.shade600,
                               ),
                             ),
                             const SizedBox(width: 6),
