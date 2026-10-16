@@ -253,6 +253,7 @@ class I18n {
       "settings_update_play_hint": "请通过 Google Play 获取官方最新版本",
       "settings_update_failed": "检查更新失败，请稍后重试",
       "settings_tap_to_check": "点击检查新版本",
+      "settings_privacy_policy": "隐私政策",
       "common_later": "稍后",
       "settings_saved_msg": "已保存",
 
@@ -559,6 +560,7 @@ class I18n {
       "settings_update_play_hint": "Please update via Google Play Store",
       "settings_update_failed": "Update check failed, please try again later",
       "settings_tap_to_check": "Tap to check for updates",
+      "settings_privacy_policy": "Privacy Policy",
       "common_later": "Later",
       "settings_saved_msg": "Settings saved",
 
@@ -865,6 +867,7 @@ class I18n {
       "settings_update_play_hint": "Opdater venligst via Google Play Butik",
       "settings_update_failed": "Kunne ikke tjekke for opdateringer",
       "settings_tap_to_check": "Tryk for at tjekke",
+      "settings_privacy_policy": "Privatlivspolitik",
       "common_later": "Senere",
       "settings_saved_msg": "Gemt",
 

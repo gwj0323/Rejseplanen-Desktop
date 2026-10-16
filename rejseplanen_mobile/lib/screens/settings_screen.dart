@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../services/api_client.dart';
 import '../services/update_service.dart';
@@ -713,7 +714,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       I18n.t(context, "settings_about_disclaimer"),
                       style: TextStyle(color: Colors.grey.shade500, fontSize: 11.5),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Text(
@@ -724,6 +725,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Text(
                           "• ${I18n.t(context, "settings_tap_to_check")}",
                           style: TextStyle(color: theme.colorScheme.primary.withOpacity(0.8), fontSize: 11),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () async {
+                            final uri = Uri.parse(AppConfig.privacyPolicyUrl);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.privacy_tip_outlined, size: 13, color: theme.colorScheme.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  I18n.t(context, "settings_privacy_policy"),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.colorScheme.primary,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: theme.colorScheme.primary.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),

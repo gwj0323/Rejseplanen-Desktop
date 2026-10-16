@@ -14,6 +14,7 @@ class AppConfig extends ChangeNotifier {
   static const String androidPackageName = 'com.spor.mobile';
   static const String googlePlayUrl = 'https://play.google.com/store/apps/details?id=$androidPackageName';
   static const String googlePlayMarketUri = 'market://details?id=$androidPackageName';
+  static const String privacyPolicyUrl = 'https://github.com/gwj0323/spor-app/blob/main/PRIVACY_POLICY.md';
 
   static const String _keySettings = 'rejseplanen_settings';
   static const String _keyApiKey = 'rejseplanen_api_key';
