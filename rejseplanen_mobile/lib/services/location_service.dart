@@ -67,13 +67,13 @@ class LocationService {
           desiredAccuracy: LocationAccuracy.medium,
           timeLimit: const Duration(seconds: 8),
         );
-        debugPrint('[LocationService] Acquired GPS: ${position.latitude}, ${position.longitude}');
+        debugPrint('[LocationService] Acquired GPS fix successfully');
         return LocationResult.success(position.latitude, position.longitude);
       } catch (e) {
         debugPrint('[LocationService] getCurrentPosition timed out or failed: $e, trying lastKnown...');
         final lastKnown = await Geolocator.getLastKnownPosition();
         if (lastKnown != null) {
-          debugPrint('[LocationService] Using lastKnown: ${lastKnown.latitude}, ${lastKnown.longitude}');
+          debugPrint('[LocationService] Using lastKnown GPS fix');
           return LocationResult.success(lastKnown.latitude, lastKnown.longitude);
         }
         return LocationResult.failure("location_timeout");

@@ -51,10 +51,12 @@ android {
 
     signingConfigs {
         release {
-            keyAlias 'spor'
-            keyPassword 'spor123456'
-            storeFile file('spor-release.jks')
-            storePassword 'spor123456'
+            if (file('spor-release.jks').exists()) {
+                keyAlias (System.getenv("ANDROID_KEY_ALIAS") ?: "spor")
+                keyPassword (System.getenv("ANDROID_KEY_PASSWORD") ?: "")
+                storeFile file('spor-release.jks')
+                storePassword (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "")
+            }
         }
     }
 

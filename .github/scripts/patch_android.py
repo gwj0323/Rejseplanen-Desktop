@@ -308,14 +308,9 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         release {
             if (file('spor-release.jks').exists()) {
                 keyAlias (System.getenv("ANDROID_KEY_ALIAS") ?: "spor")
-                keyPassword (System.getenv("ANDROID_KEY_PASSWORD") ?: "spor123456")
+                keyPassword (System.getenv("ANDROID_KEY_PASSWORD") ?: "")
                 storeFile file('spor-release.jks')
-                storePassword (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "spor123456")
-            } else {
-                keyAlias 'androiddebugkey'
-                keyPassword 'android'
-                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
-                storePassword 'android'
+                storePassword (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "")
             }
         }
     }
@@ -347,7 +342,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         for d in dirs:
             dir_path = os.path.join(root, d)
             rel = os.path.relpath(dir_path, kotlin_base).replace("\\", "/")
-            if not ("com".startswith(rel) or "com/spor".startswith(rel) or rel == "com/spor/mobile"):
+            if rel not in {"com", "com/spor", "com/spor/mobile"}:
                 shutil.rmtree(dir_path, ignore_errors=True)
 
 if __name__ == "__main__":

@@ -12,8 +12,6 @@ def patch():
 \t<string>Spor</string>
 \t<key>NSLocationWhenInUseUsageDescription</key>
 \t<string>Spor bruger din placering til at finde stoppesteder og stationer i nærheden.</string>
-\t<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-\t<string>Spor bruger din placering til at finde stoppesteder og levere rejseopdateringer.</string>
 \t<key>NSCalendarsUsageDescription</key>
 \t<string>Spor bruger din kalender til at tilføje rejser og påmindelser.</string>
 \t<key>NSCalendarsWriteOnlyAccessUsageDescription</key>

@@ -817,7 +817,7 @@ class RejseplanenApiClient {
           "format": "json",
         });
 
-        debugPrint('[ApiClient] Fetching journeyDetail: $uri');
+        debugPrint('[ApiClient] Fetching journeyDetail: id=$cleanRef');
         final resp = await _client.get(uri).timeout(const Duration(seconds: 10));
         if (resp.statusCode == 200) {
           final data = jsonDecode(resp.body);
@@ -892,7 +892,7 @@ class RejseplanenApiClient {
           }
         } else {
           fetchError = "接口请求失败 (HTTP ${resp.statusCode})";
-          debugPrint('[ApiClient] getJourneyDetail HTTP error ${resp.statusCode}: ${resp.body}');
+          debugPrint('[ApiClient] getJourneyDetail HTTP error ${resp.statusCode}');
         }
       } catch (e) {
         fetchError = "网络请求异常: $e";

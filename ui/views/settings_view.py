@@ -1,3 +1,4 @@
+import html
 import webbrowser
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
@@ -256,7 +257,7 @@ class SettingsView(QWidget):
         if api_client.last_status == "ok":
             self.diag_conn_lbl.setText(f"📡 <b>{conn_label}:</b> <span style='color:#10B981;'>{t('diag_conn_ok_short')}</span>")
         elif api_client.last_status == "error":
-            err = api_client.last_error or "Error"
+            err = html.escape(api_client.last_error or "Error")
             self.diag_conn_lbl.setText(f"📡 <b>{conn_label}:</b> <span style='color:#EF4444;'>{err}</span>")
         else:
             self.diag_conn_lbl.setText(f"📡 <b>{conn_label}:</b> {t('diag_conn_none')}")

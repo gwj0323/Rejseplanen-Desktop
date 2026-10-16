@@ -13,7 +13,10 @@ import urllib.request
 
 TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 REPO = os.environ.get("GITHUB_REPOSITORY", "gwj0323/spor-app")
-KEEP_COUNT = int(os.environ.get("KEEP_COUNT", "1"))
+try:
+    KEEP_COUNT = max(1, min(int(os.environ.get("KEEP_COUNT", "1")), 50))
+except (ValueError, TypeError):
+    KEEP_COUNT = 1
 
 if not TOKEN:
     print("Error: GITHUB_TOKEN or GH_TOKEN environment variable is required.")
