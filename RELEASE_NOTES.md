@@ -1,11 +1,11 @@
-## v1.2.1 更新内容 / What's New
+## v1.2.2 更新内容 / What's New
 
 ### 🇨🇳 中文
-- **精简行程卡片按钮**：移除展开卡片上重复的「开启动态卡片」与「到站提醒」独立按钮，统一整合进「行程提醒」弹窗（包含出发提醒、换乘提醒、到站提醒与通知栏实时进度），保留 `行程提醒`、`复制行程`、`加入日历`、`收藏路线` 四个核心操作。
-- **界面文案自然化**：全面替换生硬的提示语与算法术语（如将“智能通勤感知”改为“常走路线”、移除副标题与匹配度百分比角标、将推荐标签精简为“推荐 · 常坐地铁 / 直达 / 最快”等）。
-- **换乘标签降噪**：普通充裕换乘不再每张卡片显示绿色提示，仅在换乘时间较紧（如 `换乘仅 3 分钟`）时显示醒目提醒。
+- **Google Play 商店更新规范**：移除应用内直接解析与下载外部安装包的逻辑，Android 端检查更新改为通过系统或浏览器直接唤起 Google Play 官方商店页，完全符合 Google Play 设备和网络滥用政策。
+- **应用内隐私政策**：在设置页关于区域新增「隐私政策」跳转入口，方便直接查阅数据安全与权限使用说明。
+- **文案与本地化优化**：更新商店跳转及版本检测的中、英、丹麦三语提示文案。
 
 ### 🇬🇧 English
-- **Streamlined Trip Actions**: Consolidated duplicate live tracker and arrival alarm buttons into the unified **Trip Reminders** sheet (managing departure, transfer, arrival alerts, and the live status bar card in one place).
-- **Cleaner UI Copy**: Replaced verbose labels across Chinese, English, and Danish with concise, natural transit phrasing (`Suggested Routes`, `Recommended`, `Preferred order`, `Frequent`).
-- **Reduced Badge Noise**: Transfer buffer pills now only appear when a connection is tight or delayed.
+- **Google Play Compliance**: Aligned update checks with Google Play Device and Network Abuse policies. Android update actions now redirect directly to the official Google Play Store listing.
+- **In-App Privacy Policy**: Added a direct Privacy Policy link in Settings to comply with Google Play User Data policies.
+- **Copy & Localization Refinements**: Refined update prompts and store actions across English, Chinese, and Danish.
