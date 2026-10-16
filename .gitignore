@@ -45,6 +45,9 @@ venv.bak/
 # Local user configurations & secrets
 settings.json
 *.log
+*.jks
+*.keystore
+keystores/
 
 # Flutter & Dart
 .dart_tool/

@@ -267,18 +267,37 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         f.write(lp)
     print("Ensured flutter.compileSdkVersion=36, targetSdkVersion=36, minSdkVersion=32 in local.properties")
 
-    # 7. Copy permanent release keystore to android/app/spor-release.jks
-    keystore_src = "keystores/spor-release.jks"
-    if not os.path.exists(keystore_src) and os.path.exists("../.github/keystores/spor-release.jks"):
-        keystore_src = "../.github/keystores/spor-release.jks"
-
+    # 7. Configure release keystore (from CI secret base64 or local keystores/spor-release.jks)
+    import base64
     keystore_dest = "android/app/spor-release.jks"
-    if os.path.exists(keystore_src):
-        os.makedirs("android/app", exist_ok=True)
-        shutil.copy2(keystore_src, keystore_dest)
-        print(f"Copied release keystore from {keystore_src} to {keystore_dest}")
+    keystore_b64 = os.environ.get("ANDROID_KEYSTORE_BASE64", "").strip()
+
+    has_keystore = False
+    if keystore_b64:
+        try:
+            os.makedirs("android/app", exist_ok=True)
+            with open(keystore_dest, "wb") as f:
+                f.write(base64.b64decode(keystore_b64))
+            print("Successfully decoded release keystore from ANDROID_KEYSTORE_BASE64 secret.")
+            has_keystore = True
+        except Exception as e:
+            print(f"ERROR: Failed to decode ANDROID_KEYSTORE_BASE64: {e}")
     else:
-        print(f"WARNING: Release keystore not found at {keystore_src}!")
+        # Fall back to local file if present (for offline development)
+        for cand in ["keystores/spor-release.jks", "../.github/keystores/spor-release.jks", "android/app/spor-release.jks"]:
+            if os.path.exists(cand):
+                cand_abs = os.path.abspath(cand)
+                dest_abs = os.path.abspath(keystore_dest)
+                if cand_abs != dest_abs:
+                    os.makedirs("android/app", exist_ok=True)
+                    shutil.copy2(cand, keystore_dest)
+                    print(f"Copied local release keystore from {cand} to {keystore_dest}")
+                else:
+                    print(f"Using existing keystore at {keystore_dest}")
+                has_keystore = True
+                break
+        if not has_keystore:
+            print("NOTICE: No release keystore found (neither secret nor local file).")
 
     # 8. Patch signingConfigs and buildTypes in app/build.gradle
     if os.path.exists(app_gradle):
@@ -287,10 +306,17 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 
         signing_block = """    signingConfigs {
         release {
-            keyAlias 'spor'
-            keyPassword 'spor123456'
-            storeFile file('spor-release.jks')
-            storePassword 'spor123456'
+            if (file('spor-release.jks').exists()) {
+                keyAlias (System.getenv("ANDROID_KEY_ALIAS") ?: "spor")
+                keyPassword (System.getenv("ANDROID_KEY_PASSWORD") ?: "spor123456")
+                storeFile file('spor-release.jks')
+                storePassword (System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "spor123456")
+            } else {
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
+                storePassword 'android'
+            }
         }
     }
 

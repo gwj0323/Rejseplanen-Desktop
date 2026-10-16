@@ -9,8 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -66,14 +65,32 @@ jobs:
           path: rejseplanen_mobile/spor-ios-release.ipa
           retention-days: 3
 
+  release:
+    name: Publish iOS IPA Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download iOS IPA Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: spor-release-ipa
+          path: release_assets
+
       - name: Publish iOS IPA to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
           generate_release_notes: true
           files: |
-            rejseplanen_mobile/spor-ios-release.ipa
+            release_assets/spor-ios-release.ipa
 
       - name: Prune older artifacts
         if: success()
