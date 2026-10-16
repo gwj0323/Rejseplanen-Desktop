@@ -167,10 +167,10 @@ class _MainNavigationState extends State<MainNavigation>
           borderRadius: BorderRadius.circular(pillRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.50 : 0.10),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-              spreadRadius: -2,
+              color: Colors.black.withOpacity(isDark ? 0.28 : 0.08),
+              blurRadius: 20,
+              offset: Offset.zero,
+              blurStyle: BlurStyle.outer,
             ),
           ],
         ),
@@ -178,8 +178,8 @@ class _MainNavigationState extends State<MainNavigation>
           borderRadius: BorderRadius.circular(pillRadius),
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(
-              sigmaX: 30.0,
-              sigmaY: 30.0,
+              sigmaX: 16.0,
+              sigmaY: 16.0,
               tileMode: TileMode.clamp,
             ),
             child: CustomPaint(
@@ -362,7 +362,7 @@ class LiquidGlassShellPainter extends CustomPainter {
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
     if (!isForeground) {
-      // Uniform vertical top-to-bottom frosted glass surface (NO left-to-right white gradient!)
+      // High-transparency uniform vertical frosted glass surface
       final fillPaint = Paint()
         ..style = PaintingStyle.fill
         ..shader = ui.Gradient.linear(
@@ -370,12 +370,12 @@ class LiquidGlassShellPainter extends CustomPainter {
           rect.bottomCenter,
           isDark
               ? [
-                  const Color(0xFF1E222D).withOpacity(0.72),
-                  const Color(0xFF141720).withOpacity(0.78),
+                  const Color(0xFF1E222D).withOpacity(0.28),
+                  const Color(0xFF141720).withOpacity(0.36),
                 ]
               : [
-                  Colors.white.withOpacity(0.76),
-                  const Color(0xFFF8FAFC).withOpacity(0.68),
+                  Colors.white.withOpacity(0.36),
+                  const Color(0xFFF8FAFC).withOpacity(0.28),
                 ],
         );
       canvas.drawRRect(rrect, fillPaint);
@@ -391,12 +391,12 @@ class LiquidGlassShellPainter extends CustomPainter {
         rect.bottomCenter,
         isDark
             ? [
-                Colors.white.withOpacity(0.22),
+                Colors.white.withOpacity(0.24),
                 Colors.white.withOpacity(0.06),
-                Colors.white.withOpacity(0.10),
+                Colors.white.withOpacity(0.12),
               ]
             : [
-                Colors.white.withOpacity(0.90),
+                Colors.white.withOpacity(0.85),
                 Colors.black.withOpacity(0.05),
                 Colors.black.withOpacity(0.08),
               ],
@@ -436,20 +436,20 @@ class LiquidDropletLensPainter extends CustomPainter {
         rect.bottomCenter,
         isDark
             ? [
-                Colors.white.withOpacity(0.14),
-                Colors.white.withOpacity(0.08),
+                Colors.white.withOpacity(0.12),
+                Colors.white.withOpacity(0.06),
               ]
             : [
-                Colors.white.withOpacity(0.92),
-                Colors.white.withOpacity(0.75),
+                Colors.white.withOpacity(0.55),
+                Colors.white.withOpacity(0.38),
               ],
       );
     canvas.drawRRect(rrect, bodyPaint);
 
-    // 2. Very subtle primary color ambient tint (6% opacity)
+    // 2. Very subtle primary color ambient tint
     final tintPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = primaryColor.withOpacity(isDark ? 0.12 : 0.08);
+      ..color = primaryColor.withOpacity(isDark ? 0.10 : 0.08);
     canvas.drawRRect(rrect, tintPaint);
 
     // 3. Delicate 0.8px hairline rim on the active pill
@@ -465,7 +465,7 @@ class LiquidDropletLensPainter extends CustomPainter {
                 Colors.white.withOpacity(0.05),
               ]
             : [
-                Colors.white,
+                Colors.white.withOpacity(0.90),
                 Colors.black.withOpacity(0.04),
               ],
       );
