@@ -5,6 +5,8 @@ import 'package:mobile/services/smart_transit_service.dart';
 import 'package:mobile/services/transit_ml_engine.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('TransitMlEngine - On-Device ML Tests', () {
     test('LinUCBRanker updates inverse covariance via Sherman-Morrison and shifts posterior weights', () {
       final ranker = LinUCBRanker(
@@ -89,12 +91,16 @@ void main() {
           TripLeg(
             name: 'Bus 5C',
             type: 'BUS',
+            direction: 'Nørreport St.',
+            notes: '',
             origin: TripStop(name: 'København H', time: '08:00', rtTime: '08:03', date: '17.10.26', track: ''),
             destination: TripStop(name: 'Rådhuspladsen', time: '08:08', rtTime: '08:11', date: '17.10.26', track: ''),
           ),
           TripLeg(
             name: 'Bus 2A',
             type: 'BUS',
+            direction: 'Nørreport St.',
+            notes: '',
             origin: TripStop(name: 'Rådhuspladsen', time: '08:12', rtTime: '08:12', date: '17.10.26', track: ''),
             destination: TripStop(name: 'Nørreport St.', time: '08:22', rtTime: '08:22', date: '17.10.26', track: ''),
           ),
@@ -111,6 +117,8 @@ void main() {
           TripLeg(
             name: 'Metro M3',
             type: 'M',
+            direction: 'København H',
+            notes: '',
             origin: TripStop(name: 'København H', time: '08:02', rtTime: '08:02', date: '17.10.26', track: '1'),
             destination: TripStop(name: 'Nørreport St.', time: '08:27', rtTime: '08:27', date: '17.10.26', track: '1'),
           ),
