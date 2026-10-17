@@ -238,15 +238,15 @@ class LinUCBRanker {
     for (int i = 0; i < dim; i++) {
       _aInv[i * dim + i] = 1.0; // Identity matrix I_d (Ridge lambda = 1.0)
     }
-    _b = List<double>.from(_priors);
+    _b = List<double>.filled(dim, 0.0);
     _updates = 0;
   }
 
-  /// Posterior weight estimate $\hat{\theta} = \text{clamp}(A^{-1} b)$
+  /// Posterior weight estimate $\hat{\theta} = \text{clamp}(\theta_0 + A^{-1} b)$
   List<double> get posteriorWeights {
     final theta = List<double>.filled(dim, 0.0);
     for (int i = 0; i < dim; i++) {
-      double sum = 0.0;
+      double sum = _priors[i];
       final rowOffset = i * dim;
       for (int j = 0; j < dim; j++) {
         sum += _aInv[rowOffset + j] * _b[j];
@@ -314,7 +314,7 @@ class LinUCBRanker {
     }
 
     if (denom > 1e-6) {
-      // Gently inflate covariance (forgetting factor 0.992) so model adapts to
+      // Gently inflate covariance (forgetting factor) so model adapts to
       // seasonal / changing user habits without covariance collapse
       const double forgetInv = 1.005;
       final invDenom = 1.0 / denom;
@@ -331,12 +331,11 @@ class LinUCBRanker {
       }
     }
 
-    // Update reward accumulator b with L2 anchor towards priors
-    const double stepGain = 0.16;
-    const double priorPull = 0.015;
+    // Update reward residual accumulator b with mild L2 decay towards zero
+    const double stepGain = 0.45;
+    const double decay = 0.015;
     for (int i = 0; i < dim; i++) {
-      // Compute A * priors approximation or anchor b directly
-      _b[i] = (1.0 - priorPull) * _b[i] + priorPull * _priors[i] + stepGain * dx[i];
+      _b[i] = (1.0 - decay) * _b[i] + stepGain * dx[i];
     }
     _updates++;
   }
