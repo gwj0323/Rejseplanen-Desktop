@@ -1,24 +1,23 @@
-## v1.2.3 更新内容 / What's New
-
-### ⚠️ 重要安全与升级说明 (Important Security & Upgrade Notice)
-* **发布签名密钥全面轮换**：为彻底防范供应链与签名冒用风险，本次版本启用了全新的独立正式发布密钥，旧密钥已永久废弃。
-* **升级提示**：由于签名证书更换，已安装 `v1.2.2` 或更早版本的 Android 用户在升级时系统会提示签名不匹配，**请先卸载旧版后再安装 v1.2.3**（安装新版后未来所有版本可恢复正常覆盖升级）。
-
----
+## v1.2.4 更新内容 / What's New
 
 ### 🇨🇳 中文
-- **发布签名安全加固**：淘汰并彻底作废历史构建密钥，全面采用高强度 2048 位独立 RSA 证书通过 GitHub Actions Secrets 加密签名，防范侧载伪造与供应链风险。
-- **CI 流水线最小权限隔离**：收紧 GitHub Actions 工作流全局权限为只读，PR 触发的构建彻底剥离签名材料。
-- **日志敏感信息脱敏**：Release 生产环境静音 `debugPrint` 控制台与 Logcat 输出，移除了所有请求 URL 中关于 `accessId` 以及 GPS 经纬度坐标的日志输出。
-- **UI 与异常防御**：对桌面端富文本显示增加 HTML 转义防护，修复 Artifact 清理边界与目录白名单。
+- **端侧混合在线机器学习引擎 (`TransitMlEngine`)**：
+  - **12 维时空上下文特征提取**：融合早晚高峰双峰高斯强度、非高峰/周末状态、实时晚点强度以及**高峰期 × 换乘次数**非线性交叉特征。
+  - **多维上下文赌博机 (`LinUCBRanker`)**：基于 Sherman-Morrison 秩-1 逆协方差更新（$O(d^2)$）与上置信界（UCB）动态平衡习惯利用与新路线探索。
+  - **双层神经网络 (`PairwiseMlpRankNet`)**：内置 $12 \rightarrow 16 \rightarrow 1$（LeakyReLU 激活）成对排序网络，基于动量（Momentum）与 L2 正则化在线反向传播学习个人乘车偏好，并通过 Softmax 输出校准后的方案置信度。
+  - **一阶马尔可夫出行链 (`MarkovTransitionModel`)**：学习站点间有向转移概率与连续出行链（$A \rightarrow B \rightarrow C$），提升常走路线与返程推荐准确度。
+- **端侧智能学习管理面板**：在设置页新增三语（中 / 英 / 丹麦语）端侧机器学习状态展示与一键重置功能，100% 离线运行并保护隐私。
 
 ### 🇬🇧 English
-- **Release Signing Key Rotation**: The release signing certificate has been completely rotated to a fresh, independent 2048-bit RSA key securely managed via GitHub Secrets. (Existing users upgrading from `<=1.2.2` must uninstall the old version first before installing v1.2.3).
-- **CI Least Privilege**: Tightened workflow permissions to read-only; pull request builds are strictly isolated and never touch release signing secrets.
-- **Log Privacy Hardening**: Silenced `debugPrint` in Release mode, fully removing `accessId` tokens and GPS coordinates from system log outputs.
-- **Security & Stability Refinements**: Added HTML escaping to dynamic desktop dialogs, clamped artifact retention bounds, and restricted iOS permissions.
+- **Hybrid On-Device Machine Learning Engine (`TransitMlEngine`)**:
+  - **12D Spatio-Temporal Feature Extraction**: Captures rush-hour bimodal Gaussian intensity, off-peak/weekend context, real-time delay intensity, and non-linear **rush-hour × transfer** interactions.
+  - **Contextual Bandit (`LinUCBRanker`)**: Uses exact $O(d^2)$ Sherman-Morrison inverse covariance updates and Upper Confidence Bound (UCB) exploration.
+  - **Two-Layer Neural Network (`PairwiseMlpRankNet`)**: Implements an online $12 \rightarrow 16 \rightarrow 1$ LeakyReLU neural network trained via pairwise RankNet backpropagation with momentum and Softmax confidence calibration.
+  - **1st-Order Markov Commute Chain (`MarkovTransitionModel`)**: Learns directed station-to-station transition probabilities and sequential trip continuations ($A \rightarrow B \rightarrow C$).
+- **On-Device ML Settings Card**: View trained sample counts and reset learned preferences anytime in Settings (100% offline & privacy-preserving).
 
 ### 🇩🇰 Dansk
-- **Sikkerhedsnøgle-opdatering**: Signeringscertifikatet er blevet udskiftet med en helt ny RSA-nøgle for maksimal sikkerhed. (Brugere med version `<=1.2.2` skal afinstallere den gamle version først).
-- **Log- og databeskyttelse**: Fjernet API-nøgle og GPS-koordinater fra app-logs og slået debug-udskrifter fra i produktionsbyg.
-- **CI-sikkerhed**: Strammet rettigheder i GitHub Actions til læseadgang og isoleret PR-byg fra udgivelsesnøgler.
+- **Hybrid maskinlæringsmotor på enheden (`TransitMlEngine`)**:
+  - **12D kontekstuel egenskabsudtrækning**: Inddrager myldretidsintensitet, forsinkelsesgrad og ikke-lineære krydseffekter mellem myldretid og skift.
+  - **Kontekstuel Bandit (`LinUCBRanker`) & 2-lags Neuralt Netværk (`PairwiseMlpRankNet`)**: Lærer dine rejse- og skiftevaner 100% offline på telefonen med parvis RankNet-backpropagation og Markov-kæder for rejser ($A \rightarrow B \rightarrow C$).
+- **ML-administration i Indstillinger**: Se antal trænede valg og nulstil ML-modellen direkte under Indstillinger.
