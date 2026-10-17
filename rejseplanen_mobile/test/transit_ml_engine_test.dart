@@ -1,9 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rejseplanen_mobile/models/station.dart';
-import 'package:rejseplanen_mobile/models/trip.dart';
-import 'package:rejseplanen_mobile/services/smart_transit_service.dart';
-import 'package:rejseplanen_mobile/services/transit_ml_engine.dart';
+import 'package:mobile/models/trip.dart';
+import 'package:mobile/services/smart_transit_service.dart';
+import 'package:mobile/services/transit_ml_engine.dart';
 
 void main() {
   group('TransitMlEngine - On-Device ML Tests', () {

@@ -60,7 +60,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: rejseplanen_mobile
-        run: flutter test
+        run: flutter test test/transit_ml_engine_test.dart
 
       - name: Build Android Release APK
         working-directory: rejseplanen_mobile

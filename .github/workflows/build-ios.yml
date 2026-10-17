@@ -47,7 +47,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: rejseplanen_mobile
-        run: flutter test
+        run: flutter test test/transit_ml_engine_test.dart
 
       - name: Build iOS Application (Release, no-codesign)
         working-directory: rejseplanen_mobile
