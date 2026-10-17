@@ -137,6 +137,12 @@ class AppConfig extends ChangeNotifier {
     saveSettings();
   }
 
+  void resetMlModel({bool clearHistory = false}) {
+    smartService.resetMlState(clearHistory: clearHistory);
+    saveSettings();
+    notifyListeners();
+  }
+
   String? _activeOngoingTripIdx;
   TripProposal? _activeOngoingTrip;
   Station? _activeOngoingOrigin;

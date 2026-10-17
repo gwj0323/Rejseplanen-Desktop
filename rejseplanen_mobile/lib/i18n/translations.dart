@@ -309,6 +309,11 @@ class I18n {
       "trip_share_btn": "复制行程",
       "trip_share_copied": "已复制行程信息",
       "board_smart_stations": "常看",
+      "settings_ml_group": "端侧智能学习 (On-Device ML)",
+      "settings_ml_desc": "基于本地 LinUCB 上下文强化学习、双层神经网络与马尔可夫出行链，完全离线学习您的乘车与换乘偏好。",
+      "settings_ml_stats": "已学习样本：{samples} 次 · 通勤记录：{events} 条",
+      "settings_ml_reset_btn": "重置学习模型",
+      "settings_ml_reset_done": "已重置端侧机器学习偏好与历史权重",
     },
 
     "en_US": {
@@ -616,6 +621,11 @@ class I18n {
       "trip_share_btn": "Copy Trip",
       "trip_share_copied": "Trip copied",
       "board_smart_stations": "Frequent",
+      "settings_ml_group": "On-Device Machine Learning",
+      "settings_ml_desc": "Learns your transit & transfer preferences 100% offline using LinUCB contextual bandits, a 2-layer RankNet MLP, and Markov chains.",
+      "settings_ml_stats": "Trained steps: {samples} · Commute events: {events}",
+      "settings_ml_reset_btn": "Reset ML Model",
+      "settings_ml_reset_done": "On-device ML weights and history reset",
     },
 
     "da_DK": {
@@ -923,6 +933,11 @@ class I18n {
       "trip_share_btn": "Kopiér rejse",
       "trip_share_copied": "Rejse kopieret",
       "board_smart_stations": "Ofte brugt",
+      "settings_ml_group": "Maskinlæring på enheden",
+      "settings_ml_desc": "Lærer dine rejse- og skiftevaner 100% offline via LinUCB, et 2-lags neuralt netværk (RankNet MLP) og Markov-kæder.",
+      "settings_ml_stats": "Trænede valg: {samples} · Rejsehistorik: {events}",
+      "settings_ml_reset_btn": "Nulstil ML-model",
+      "settings_ml_reset_done": "ML-præferencer og historik er nulstillet",
     }
   };
 

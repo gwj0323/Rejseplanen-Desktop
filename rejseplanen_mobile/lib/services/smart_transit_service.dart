@@ -6,6 +6,7 @@ import '../models/station.dart';
 import '../models/trip.dart';
 import '../widgets/transit_badge.dart';
 import '../i18n/translations.dart';
+import 'transit_ml_engine.dart';
 
 /// Represents a recorded route search or trip selection event for on-device ML
 class CommuteEvent {
@@ -157,6 +158,7 @@ class TransferRiskSummary {
 class ScoredTripProposal {
   final TripProposal trip;
   final double score;
+  final double confidence;
   final bool isSmartPick;
   final String? reasonKey;
   final TransferRiskSummary transferRisk;
@@ -164,6 +166,7 @@ class ScoredTripProposal {
   ScoredTripProposal({
     required this.trip,
     required this.score,
+    this.confidence = 0.5,
     required this.isSmartPick,
     this.reasonKey,
     required this.transferRisk,
@@ -191,39 +194,36 @@ class LegSegmentShare {
 }
 
 /// On-device Machine Learning & Commute Intelligence Engine
+///
+/// Powered by [TransitMlEngine]:
+/// - Contextual Bandit (`LinUCBRanker`) with Sherman-Morrison covariance updates
+/// - Two-Layer Neural Network (`PairwiseMlpRankNet`, 12 -> 16 -> 1 LeakyReLU)
+/// - First-Order Spatio-Temporal Markov Transition Graph (`MarkovTransitionModel`)
 class SmartTransitService {
   static const String _keyCommuteEvents = 'spor_ml_commute_events_v1';
   static const String _keyBoardEvents = 'spor_ml_board_events_v1';
   static const String _keyPreferenceWeights = 'spor_ml_pref_weights_v1';
+  static const String _keyMlEngineV2 = 'spor_ml_engine_v2';
 
   List<CommuteEvent> _commuteEvents = [];
   List<BoardViewEvent> _boardEvents = [];
+  final TransitMlEngine _mlEngine = TransitMlEngine();
 
-  /// Online Learning-to-Rank weight vector:
-  /// [0] normDuration   (prior: -1.25)
-  /// [1] transfers      (prior: -0.80)
-  /// [2] walkRatio      (prior: -0.45)
-  /// [3] metroRatio     (prior: +0.25)
-  /// [4] stogRatio      (prior: +0.20)
-  /// [5] trainRatio     (prior: +0.15)
-  /// [6] busRatio       (prior: -0.10)
-  /// [7] riskPenalty    (prior: -0.95)
-  List<double> _weights = [
-    -1.25,
-    -0.80,
-    -0.45,
-    0.25,
-    0.20,
-    0.15,
-    -0.10,
-    -0.95,
-  ];
-
-  int _learnedSamplesCount = 0;
-  int get learnedSamplesCount => _learnedSamplesCount;
+  TransitMlEngine get mlEngine => _mlEngine;
+  int get learnedSamplesCount => _mlEngine.totalTrainingSteps;
   int get commuteHistoryCount => _commuteEvents.length;
 
-  List<double> get weights => List.unmodifiable(_weights);
+  /// Effective 12-dimensional posterior weight vector from LinUCB
+  List<double> get weights => List.unmodifiable(_mlEngine.posteriorWeights);
+
+  /// Reset all learned on-device ML weights and commute history
+  void resetMlState({bool clearHistory = false}) {
+    _mlEngine.reset();
+    if (clearHistory) {
+      _commuteEvents.clear();
+      _boardEvents.clear();
+    }
+  }
 
   Future<void> loadFromPrefs(SharedPreferences prefs) async {
     try {
@@ -243,18 +243,32 @@ class SmartTransitService {
             .toList();
       }
 
-      final weightsStr = prefs.getString(_keyPreferenceWeights);
-      if (weightsStr != null && weightsStr.isNotEmpty) {
-        final map = jsonDecode(weightsStr) as Map<String, dynamic>;
-        if (map['weights'] is List) {
-          final loaded = (map['weights'] as List)
-              .map((v) => (v as num).toDouble())
-              .toList();
-          if (loaded.length == 8) {
-            _weights = loaded;
+      final engineStr = prefs.getString(_keyMlEngineV2);
+      if (engineStr != null && engineStr.isNotEmpty) {
+        final map = jsonDecode(engineStr) as Map<String, dynamic>;
+        _mlEngine.loadFromJson(map);
+      } else {
+        // Seamless v1 -> v2 migration if user had legacy 8D weights
+        final weightsStr = prefs.getString(_keyPreferenceWeights);
+        if (weightsStr != null && weightsStr.isNotEmpty) {
+          final map = jsonDecode(weightsStr) as Map<String, dynamic>;
+          if (map['weights'] is List) {
+            final loaded = (map['weights'] as List)
+                .map((v) => (v as num).toDouble())
+                .toList();
+            final legacySamples = (map['samples'] as num?)?.toInt() ?? 0;
+            _mlEngine.importLegacyWeights(loaded, legacySamples);
           }
         }
-        _learnedSamplesCount = (map['samples'] as num?)?.toInt() ?? 0;
+        // Populate Markov transitions from historical commute events
+        for (final ev in _commuteEvents.reversed) {
+          _mlEngine.markov.recordTransition(
+            ev.origin.name,
+            ev.dest.name,
+            weight: ev.weight,
+            timestampMs: ev.timestampMs,
+          );
+        }
       }
     } catch (e) {
       debugPrint('[SmartTransitService] Error loading ML state: $e');
@@ -272,11 +286,8 @@ class SmartTransitService {
         jsonEncode(_boardEvents.map((e) => e.toJson()).toList()),
       );
       await prefs.setString(
-        _keyPreferenceWeights,
-        jsonEncode({
-          'weights': _weights,
-          'samples': _learnedSamplesCount,
-        }),
+        _keyMlEngineV2,
+        jsonEncode(_mlEngine.toJson()),
       );
     } catch (e) {
       debugPrint('[SmartTransitService] Error saving ML state: $e');
@@ -309,6 +320,14 @@ class SmartTransitService {
     if (_commuteEvents.length > 250) {
       _commuteEvents = _commuteEvents.sublist(0, 250);
     }
+
+    // Update 1st-order Markov transition matrix
+    _mlEngine.markov.recordTransition(
+      origin.name,
+      dest.name,
+      weight: weight,
+      timestampMs: now.millisecondsSinceEpoch,
+    );
   }
 
   /// Record viewing a station departure/arrival board
@@ -330,7 +349,8 @@ class SmartTransitService {
     }
   }
 
-  /// Online Pairwise Learning-to-Rank update when user picks a specific trip proposal
+  /// Online Pairwise Learning-to-Rank update (LinUCB + 2-Layer Neural RankNet MLP)
+  /// when user picks a specific trip proposal from [candidates].
   void learnFromTripSelection(
     TripProposal chosen,
     List<TripProposal> candidates,
@@ -345,37 +365,22 @@ class SmartTransitService {
     }
 
     final chosenFeat = _extractFeatures(chosen, minDur, maxDur);
-    final List<double> avgOtherFeat = List.filled(8, 0.0);
-    int otherCount = 0;
+    final List<List<double>> unchosenFeats = [];
 
     for (final c in candidates) {
       if (c.idx == chosen.idx) continue;
-      final f = _extractFeatures(c, minDur, maxDur);
-      for (int i = 0; i < 8; i++) {
-        avgOtherFeat[i] += f[i];
-      }
-      otherCount++;
+      unchosenFeats.add(_extractFeatures(c, minDur, maxDur));
     }
-    if (otherCount == 0) return;
-    for (int i = 0; i < 8; i++) {
-      avgOtherFeat[i] /= otherCount;
-    }
+    if (unchosenFeats.isEmpty) return;
 
-    // Online perceptron / gradient step with gentle L2 anchor to priors
-    const double lr = 0.08;
-    const List<double> priors = [-1.25, -0.80, -0.45, 0.25, 0.20, 0.15, -0.10, -0.95];
-    const List<double> minBounds = [-3.0, -2.5, -2.0, -1.0, -1.0, -1.0, -1.2, -2.5];
-    const List<double> maxBounds = [-0.2, -0.1, 0.2, 1.5, 1.5, 1.5, 1.2, -0.1];
-
-    for (int i = 0; i < 8; i++) {
-      final delta = chosenFeat[i] - avgOtherFeat[i];
-      final reg = 0.02 * (priors[i] - _weights[i]);
-      _weights[i] = (_weights[i] + lr * delta + reg).clamp(minBounds[i], maxBounds[i]);
-    }
-    _learnedSamplesCount++;
+    _mlEngine.trainPairwise(
+      chosenFeatures: chosenFeat,
+      unchosenCandidates: unchosenFeats,
+    );
   }
 
-  /// Predict top likely routes right now using Spatio-Temporal Circular Kernel + Return-Trip Inference
+  /// Predict top likely routes right now using Spatio-Temporal Circular Kernel
+  /// + 1st-Order Markov Chain Transition Graph + Return-Trip Inference
   List<RoutePrediction> predictRoutes({
     required List<Map<String, Station>> favoriteTrips,
     DateTime? nowOverride,
@@ -442,7 +447,7 @@ class SmartTransitService {
           isSynthesizedReturn: true,
         ),
       );
-      // If current time is 6..11 hours after the recorded outbound trip, boost return trip
+      // If current time is 5..12 hours after the recorded outbound trip, boost return trip
       final hoursSinceOutbound = (currentHour - ev.hourOfDay + 24.0) % 24.0;
       if (hoursSinceOutbound >= 5.0 && hoursSinceOutbound <= 12.0) {
         revAcc.totalScore += ev.weight * 0.55 * dayKernel * recencyKernel;
@@ -476,7 +481,25 @@ class SmartTransitService {
       revAcc.totalScore += 0.35;
     }
 
-    // 3. Apply Spatial GPS Kernel if current coordinates are known
+    // 3. Apply 1st-Order Markov Transition Probability & Sequential Chain Continuation
+    for (final acc in map.values) {
+      final markovProb = _mlEngine.markov.transitionProbability(
+        acc.origin.name,
+        acc.dest.name,
+      );
+      if (markovProb > 0.0) {
+        acc.totalScore *= (1.0 + 0.45 * markovProb);
+      }
+      if (_mlEngine.markov.isSequentialChainContinuation(
+        acc.origin.name,
+        now.millisecondsSinceEpoch,
+      )) {
+        acc.totalScore *= 1.30;
+        acc.returnMatched = true;
+      }
+    }
+
+    // 4. Apply Spatial GPS Kernel if current coordinates are known
     if (currentLat != null && currentLon != null) {
       for (final acc in map.values) {
         if (acc.origin.lat != null && acc.origin.lon != null) {
@@ -624,7 +647,8 @@ class SmartTransitService {
     }).toList();
   }
 
-  /// Score a batch of trip proposals and identify the #1 Smart Pick + Transfer Risk
+  /// Score a batch of trip proposals using the hybrid LinUCB + 2-Layer Neural RankNet MLP
+  /// and identify the #1 Smart Pick + Transfer Risk + Calibrated Softmax Confidence
   List<ScoredTripProposal> scoreProposals(List<TripProposal> proposals) {
     if (proposals.isEmpty) return [];
 
@@ -635,7 +659,10 @@ class SmartTransitService {
       if (p.durationMin > maxDur) maxDur = p.durationMin;
     }
 
-    final List<ScoredTripProposal> temp = [];
+    final List<TransferRiskSummary> risks = [];
+    final List<List<double>> feats = [];
+    final List<double> rawScores = [];
+
     int bestIndex = 0;
     double bestScore = -999999.0;
 
@@ -643,57 +670,50 @@ class SmartTransitService {
       final p = proposals[i];
       final risk = analyzeTransferRisk(p);
       final feat = _extractFeatures(p, minDur, maxDur, precomputedRisk: risk);
-      double s = 0.0;
-      for (int j = 0; j < 8; j++) {
-        s += _weights[j] * feat[j];
-      }
+      final s = _mlEngine.scoreFeatureVector(feat, includeExploration: true);
+
+      risks.add(risk);
+      feats.add(feat);
+      rawScores.add(s);
+
       if (s > bestScore) {
         bestScore = s;
         bestIndex = i;
       }
-      temp.add(
-        ScoredTripProposal(
-          trip: p,
-          score: s,
-          isSmartPick: false,
-          transferRisk: risk,
-        ),
-      );
     }
+
+    final probs = _mlEngine.computeSoftmaxProbabilities(rawScores, temperature: 0.65);
 
     // Determine the human-readable reason for the top pick
     final winner = proposals[bestIndex];
-    final winnerFeat = _extractFeatures(
-      winner,
-      minDur,
-      maxDur,
-      precomputedRisk: temp[bestIndex].transferRisk,
-    );
+    final winnerFeat = feats[bestIndex];
+    final postWeights = _mlEngine.posteriorWeights;
 
     String reasonKey = 'smart_pick_balanced';
     if (winner.changes == 0 && proposals.any((p) => p.changes > 0)) {
       reasonKey = 'smart_pick_direct';
     } else if (winner.durationMin == minDur && proposals.length > 1) {
       reasonKey = 'smart_pick_fastest';
-    } else if (winnerFeat[3] > 0.5 && _weights[3] > 0.3) {
+    } else if (winnerFeat[3] > 0.5 && postWeights[3] > 0.3) {
       reasonKey = 'smart_pick_metro';
-    } else if (winnerFeat[4] > 0.5 && _weights[4] > 0.25) {
+    } else if (winnerFeat[4] > 0.5 && postWeights[4] > 0.25) {
       reasonKey = 'smart_pick_stog';
-    } else if (winnerFeat[5] > 0.5 && _weights[5] > 0.2) {
+    } else if (winnerFeat[5] > 0.5 && postWeights[5] > 0.2) {
       reasonKey = 'smart_pick_train';
-    } else if (temp[bestIndex].transferRisk.overallLevel == TransferRiskLevel.low) {
+    } else if (risks[bestIndex].overallLevel == TransferRiskLevel.low) {
       reasonKey = 'smart_pick_safe_transfer';
     }
 
     final List<ScoredTripProposal> result = [];
-    for (int i = 0; i < temp.length; i++) {
+    for (int i = 0; i < proposals.length; i++) {
       result.add(
         ScoredTripProposal(
-          trip: temp[i].trip,
-          score: temp[i].score,
+          trip: proposals[i],
+          score: rawScores[i],
+          confidence: i < probs.length ? probs[i] : 0.5,
           isSmartPick: i == bestIndex,
           reasonKey: i == bestIndex ? reasonKey : null,
-          transferRisk: temp[i].transferRisk,
+          transferRisk: risks[i],
         ),
       );
     }
@@ -916,6 +936,19 @@ class SmartTransitService {
     return diff;
   }
 
+  /// Extract 12-dimensional contextual feature vector for [TransitMlEngine]:
+  ///  [0] normDuration
+  ///  [1] normTransfers
+  ///  [2] walkRatio
+  ///  [3] metroRatio
+  ///  [4] stogRatio
+  ///  [5] trainRatio
+  ///  [6] busRatio
+  ///  [7] riskPenalty
+  ///  [8] rushHourIntensity
+  ///  [9] offPeakWeekend
+  /// [10] rushTransferInteraction
+  /// [11] delayIntensity
   List<double> _extractFeatures(
     TripProposal p,
     int minDur,
@@ -923,7 +956,7 @@ class SmartTransitService {
     TransferRiskSummary? precomputedRisk,
   }) {
     final normDur = (p.durationMin - minDur) / math.max(1, maxDur - minDur);
-    final transfers = p.changes.toDouble();
+    final normTransfers = (p.changes / 3.0).clamp(0.0, 1.5);
 
     int totalMin = 0;
     int walkMin = 0;
@@ -958,18 +991,43 @@ class SmartTransitService {
     if (risk.overallLevel == TransferRiskLevel.high) {
       riskPenalty = 1.0;
     } else if (risk.overallLevel == TransferRiskLevel.medium) {
-      riskPenalty = 0.45;
+      riskPenalty = 0.48;
+    } else if (risk.overallLevel == TransferRiskLevel.low && risk.minEffectiveBufferMin < 8) {
+      riskPenalty = ((8 - risk.minEffectiveBufferMin) / 20.0).clamp(0.0, 0.25);
     }
+
+    // Temporal context from trip departure time (fallback to current clock)
+    final depMin = _parseMinutesOfDay(p.depTime);
+    final now = DateTime.now();
+    final hour = depMin != null ? (depMin / 60.0) : (now.hour + now.minute / 60.0);
+    final isWeekend = now.weekday >= 6;
+
+    // Bimodal Gaussian rush-hour intensity (morning peak ~08:00, afternoon peak ~16:30)
+    double rushHourIntensity = 0.0;
+    if (!isWeekend) {
+      final morningPeak = math.exp(-((hour - 8.0) * (hour - 8.0)) / (2 * 1.15 * 1.15));
+      final eveningPeak = math.exp(-((hour - 16.5) * (hour - 16.5)) / (2 * 1.35 * 1.35));
+      rushHourIntensity = math.max(morningPeak, eveningPeak).clamp(0.0, 1.0);
+    }
+
+    final double offPeakWeekend =
+        (isWeekend || hour >= 21.0 || hour <= 5.5) ? 1.0 : 0.0;
+    final double rushTransferInteraction = rushHourIntensity * normTransfers;
+    final double delayIntensity = (risk.maxIncomingDelayMin / 15.0).clamp(0.0, 1.0);
 
     return [
       normDur,
-      transfers,
+      normTransfers,
       walkMin / totalMin,
       metroMin / totalMin,
       stogMin / totalMin,
       trainMin / totalMin,
       busMin / totalMin,
       riskPenalty,
+      rushHourIntensity,
+      offPeakWeekend,
+      rushTransferInteraction,
+      delayIntensity,
     ];
   }
 

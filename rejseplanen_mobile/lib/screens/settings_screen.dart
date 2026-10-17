@@ -651,7 +651,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Group 3: About
+          // Group 3: On-Device Machine Learning
+          Text(
+            I18n.t(context, "settings_ml_group"),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.psychology_outlined, size: 20, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          I18n.t(context, "settings_ml_stats", {
+                            "samples": "${config.smartService.learnedSamplesCount}",
+                            "events": "${config.smartService.commuteHistoryCount}",
+                          }),
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    I18n.t(context, "settings_ml_desc"),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        config.resetMlModel(clearHistory: true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(I18n.t(context, "settings_ml_reset_done")),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.restart_alt, size: 16),
+                      label: Text(
+                        I18n.t(context, "settings_ml_reset_btn"),
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Group 4: About
           Text(
             I18n.t(context, "settings_about_group"),
             style: theme.textTheme.titleMedium?.copyWith(
