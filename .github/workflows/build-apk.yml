@@ -58,13 +58,17 @@ jobs:
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
+      - name: Run unit tests
+        working-directory: rejseplanen_mobile
+        run: flutter test
+
       - name: Build Android Release APK
         working-directory: rejseplanen_mobile
         env:
           ANDROID_KEY_ALIAS: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEY_ALIAS || '' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
           ANDROID_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEY_PASSWORD || '' }}
-        run: flutter build apk --release --verbose
+        run: flutter build apk --release
 
       - name: Build Android App Bundle (Google Play AAB)
         working-directory: rejseplanen_mobile
@@ -72,7 +76,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEY_ALIAS || '' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
           ANDROID_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEY_PASSWORD || '' }}
-        run: flutter build appbundle --release --verbose
+        run: flutter build appbundle --release
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

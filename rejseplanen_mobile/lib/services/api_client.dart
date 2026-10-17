@@ -114,6 +114,31 @@ class RejseplanenApiClient {
     return [item];
   }
 
+  static const int _maxCacheEntries = 300;
+
+  static void _cacheStationId(String key, String fullId) {
+    if (key.isEmpty || fullId.isEmpty) return;
+    if (_stationIdCache.length >= _maxCacheEntries && !_stationIdCache.containsKey(key)) {
+      _stationIdCache.remove(_stationIdCache.keys.first);
+    }
+    _stationIdCache[key] = fullId;
+  }
+
+  /// Redact any accidental accessId token from exception messages or URLs
+  static String _sanitizeError(Object e) {
+    return e.toString().replaceAll(RegExp(r'accessId=[^&\s)]+'), 'accessId=***');
+  }
+
+  /// Ensure baseUrl is trimmed and uses HTTPS
+  String _safeBaseUrl([String? overrideUrl]) {
+    final raw = (overrideUrl ?? config.baseUrl).trim().replaceAll(RegExp(r'/+$'), '');
+    final parsed = Uri.tryParse(raw);
+    if (parsed == null || parsed.scheme.toLowerCase() != 'https' || parsed.host.isEmpty) {
+      return 'https://www.rejseplanen.dk/api';
+    }
+    return raw;
+  }
+
   Future<String> _resolveStationHafasId(String query) async {
     if (query.isEmpty || query.startsWith("A=")) return query;
     if (_stationIdCache.containsKey(query)) return _stationIdCache[query]!;
@@ -122,7 +147,7 @@ class RejseplanenApiClient {
     if (key.isEmpty) return query;
 
     try {
-      final uri = Uri.parse("${config.baseUrl}/location.name").replace(queryParameters: {
+      final uri = Uri.parse("${_safeBaseUrl()}/location.name").replace(queryParameters: {
         "input": query,
         "accessId": key,
         "format": "json"
@@ -135,12 +160,12 @@ class RejseplanenApiClient {
           final stop = item["StopLocation"] ?? item["CoordLocation"];
           if (stop != null && stop["id"] != null) {
             String fullId = stop["id"].toString();
-            _stationIdCache[query] = fullId;
+            _cacheStationId(query, fullId);
             if (stop["extId"] != null) {
-              _stationIdCache[stop["extId"].toString()] = fullId;
+              _cacheStationId(stop["extId"].toString(), fullId);
             }
             if (stop["name"] != null) {
-              _stationIdCache[stop["name"].toString()] = fullId;
+              _cacheStationId(stop["name"].toString(), fullId);
             }
             return fullId;
           }
@@ -152,14 +177,22 @@ class RejseplanenApiClient {
 
   Future<Map<String, dynamic>> testConnection({String? apiKey, String? baseUrl}) async {
     final key = (apiKey ?? config.apiKey).trim();
-    final url = (baseUrl ?? config.baseUrl).replaceAll(RegExp(r'/+$'), '');
+    final rawUrl = (baseUrl ?? config.baseUrl).trim().replaceAll(RegExp(r'/+$'), '');
     final lang = config.effectiveLanguage;
 
     if (key.isEmpty) {
       return {"success": false, "message": I18n.tr("conn_test_empty_key", lang)};
     }
 
-    final uri = Uri.parse("$url/location.name").replace(queryParameters: {
+    final parsedUrl = Uri.tryParse(rawUrl);
+    if (parsedUrl == null || parsedUrl.scheme.toLowerCase() != 'https' || parsedUrl.host.isEmpty) {
+      return {
+        "success": false,
+        "message": I18n.tr("conn_test_net_err", lang, {"error": "HTTPS required"})
+      };
+    }
+
+    final uri = Uri.parse("$rawUrl/location.name").replace(queryParameters: {
       "input": "København H",
       "accessId": key,
       "format": "json"
@@ -192,14 +225,14 @@ class RejseplanenApiClient {
           "success": false,
           "message": I18n.tr("conn_test_http_err", lang, {
             "code": "${resp.statusCode}",
-            "reason": resp.reasonPhrase ?? resp.body,
+            "reason": resp.reasonPhrase ?? "HTTP Error",
           })
         };
       }
     } catch (e) {
       return {
         "success": false,
-        "message": I18n.tr("conn_test_net_err", lang, {"error": "$e"})
+        "message": I18n.tr("conn_test_net_err", lang, {"error": _sanitizeError(e)})
       };
     }
   }
@@ -215,7 +248,7 @@ class RejseplanenApiClient {
     }
 
     try {
-      final uri = Uri.parse("${config.baseUrl}/location.name").replace(queryParameters: {
+      final uri = Uri.parse("${_safeBaseUrl()}/location.name").replace(queryParameters: {
         "input": query,
         "accessId": key,
         "format": "json"
@@ -232,10 +265,10 @@ class RejseplanenApiClient {
             String extId = stop["extId"]?.toString() ?? "";
             String name = stop["name"]?.toString() ?? "";
             if (fullId.isNotEmpty && extId.isNotEmpty) {
-              _stationIdCache[extId] = fullId;
+              _cacheStationId(extId, fullId);
             }
             if (fullId.isNotEmpty && name.isNotEmpty) {
-              _stationIdCache[name] = fullId;
+              _cacheStationId(name, fullId);
             }
             results.add(Station(
               id: fullId.isNotEmpty ? fullId : extId,
@@ -252,7 +285,7 @@ class RejseplanenApiClient {
         }
       }
     } catch (e) {
-      debugPrint('[ApiClient] searchLocations error: $e');
+      debugPrint('[ApiClient] searchLocations error: ${_sanitizeError(e)}');
     }
 
     if (config.mockFallback) {
@@ -318,7 +351,7 @@ class RejseplanenApiClient {
     }
 
     try {
-      final uri = Uri.parse("${config.baseUrl}/location.nearbystops").replace(queryParameters: {
+      final uri = Uri.parse("${_safeBaseUrl()}/location.nearbystops").replace(queryParameters: {
         "originCoordLat": lat.toString(),
         "originCoordLong": lon.toString(),
         "maxNo": maxNo.toString(),
@@ -358,7 +391,7 @@ class RejseplanenApiClient {
         }
       }
     } catch (e) {
-      debugPrint('[ApiClient] nearbyStops error: $e');
+      debugPrint('[ApiClient] nearbyStops error: ${_sanitizeError(e)}');
     }
 
     if (config.mockFallback) {
@@ -418,7 +451,7 @@ class RejseplanenApiClient {
         params["time"] = _formatTimeStr(timeStr);
       }
 
-      final uri = Uri.parse("${config.baseUrl}/departureBoard").replace(queryParameters: params);
+      final uri = Uri.parse("${_safeBaseUrl()}/departureBoard").replace(queryParameters: params);
       final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
@@ -484,7 +517,7 @@ class RejseplanenApiClient {
         }
       }
     } catch (e) {
-      debugPrint('[ApiClient] getDepartureBoard error: $e');
+      debugPrint('[ApiClient] getDepartureBoard error: ${_sanitizeError(e)}');
     }
 
     if (config.mockFallback) {
@@ -528,7 +561,7 @@ class RejseplanenApiClient {
         params["time"] = _formatTimeStr(timeStr);
       }
 
-      final uri = Uri.parse("${config.baseUrl}/arrivalBoard").replace(queryParameters: params);
+      final uri = Uri.parse("${_safeBaseUrl()}/arrivalBoard").replace(queryParameters: params);
       final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
@@ -594,7 +627,7 @@ class RejseplanenApiClient {
         }
       }
     } catch (e) {
-      debugPrint('[ApiClient] getArrivalBoard error: $e');
+      debugPrint('[ApiClient] getArrivalBoard error: ${_sanitizeError(e)}');
     }
 
     if (config.mockFallback) {
@@ -623,8 +656,12 @@ class RejseplanenApiClient {
     }
 
     try {
-      final origResolved = await _resolveStationHafasId(originId);
-      final destResolved = await _resolveStationHafasId(destId);
+      final resolvedPair = await Future.wait([
+        _resolveStationHafasId(originId),
+        _resolveStationHafasId(destId),
+      ]);
+      final origResolved = resolvedPair[0];
+      final destResolved = resolvedPair[1];
 
       final params = <String, String>{
         "originId": origResolved,
@@ -645,7 +682,7 @@ class RejseplanenApiClient {
         params["time"] = _formatTimeStr(timeStr);
       }
 
-      final uri = Uri.parse("${config.baseUrl}/trip").replace(queryParameters: params);
+      final uri = Uri.parse("${_safeBaseUrl()}/trip").replace(queryParameters: params);
       final resp = await _client.get(uri).timeout(const Duration(seconds: 15));
 
       if (resp.statusCode == 200) {
@@ -756,7 +793,7 @@ class RejseplanenApiClient {
         }
       }
     } catch (e) {
-      debugPrint('[ApiClient] getTrips error: $e');
+      debugPrint('[ApiClient] getTrips error: ${_sanitizeError(e)}');
     }
 
     if (config.mockFallback) {
@@ -807,7 +844,7 @@ class RejseplanenApiClient {
           }
         } catch (_) {}
 
-        final base = config.baseUrl.replaceAll(RegExp(r'/+$'), '');
+        final base = _safeBaseUrl();
         // In Rejseplanen API 2.0, the parameter is "id", while legacy API 1.0 used "ref".
         // Providing both ensures 100% compatibility across all Rejseplanen backend dialects.
         final uri = Uri.parse("$base/journeyDetail").replace(queryParameters: {
@@ -895,8 +932,9 @@ class RejseplanenApiClient {
           debugPrint('[ApiClient] getJourneyDetail HTTP error ${resp.statusCode}');
         }
       } catch (e) {
-        fetchError = "网络请求异常: $e";
-        debugPrint('[ApiClient] getJourneyDetail error: $e');
+        final safeErr = _sanitizeError(e);
+        fetchError = "网络请求异常: $safeErr";
+        debugPrint('[ApiClient] getJourneyDetail error: $safeErr');
       }
     } else if (key.isEmpty) {
       fetchError = "未配置 API Key，无法查询经停站点";

@@ -118,7 +118,7 @@ class AppConfig extends ChangeNotifier {
 
   void recordRouteSearch(Station origin, Station dest) {
     smartService.recordCommuteAction(origin, dest, weight: 1.0);
-    saveSettings();
+    _saveMlOnly();
   }
 
   void recordTripChoice(
@@ -129,18 +129,27 @@ class AppConfig extends ChangeNotifier {
   ) {
     smartService.recordCommuteAction(origin, dest, weight: 2.5);
     smartService.learnFromTripSelection(chosen, candidates);
-    saveSettings();
+    _saveMlOnly();
   }
 
   void recordBoardStationView(Station station) {
     smartService.recordBoardStationView(station);
-    saveSettings();
+    _saveMlOnly();
   }
 
   void resetMlModel({bool clearHistory = false}) {
     smartService.resetMlState(clearHistory: clearHistory);
-    saveSettings();
+    _saveMlOnly();
     notifyListeners();
+  }
+
+  Future<void> _saveMlOnly() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await smartService.saveToPrefs(prefs);
+    } catch (e) {
+      debugPrint('[AppConfig] Error saving ML state: $e');
+    }
   }
 
   String? _activeOngoingTripIdx;
@@ -276,7 +285,6 @@ class AppConfig extends ChangeNotifier {
       if (_themeMode == ThemeMode.dark) themeStr = 'Dark';
 
       final data = {
-        'api_key': _apiKey,
         'base_url': _baseUrl,
         'mock_fallback': _mockFallback,
         'language': _language,
@@ -293,7 +301,6 @@ class AppConfig extends ChangeNotifier {
         'recent_searches': _recentSearches,
       };
       await prefs.setString(_keySettings, jsonEncode(data));
-      await smartService.saveToPrefs(prefs);
       debugPrint('[AppConfig] Saved settings to disk. apiKey length: ${_apiKey.length}');
       notifyListeners();
     } catch (e) {
@@ -302,12 +309,23 @@ class AppConfig extends ChangeNotifier {
   }
 
   void setApiKey(String key) {
-    _apiKey = key;
+    final trimmed = key.trim();
+    if (_apiKey == trimmed) return;
+    _apiKey = trimmed;
     saveSettings();
   }
 
   void setBaseUrl(String url) {
-    _baseUrl = url;
+    String clean = url.trim().replaceAll(RegExp(r'/+$'), '');
+    if (clean.isEmpty) {
+      clean = 'https://www.rejseplanen.dk/api';
+    } else if (clean.startsWith('http://')) {
+      clean = 'https://${clean.substring(7)}';
+    } else if (!clean.startsWith('https://')) {
+      clean = 'https://$clean';
+    }
+    if (_baseUrl == clean) return;
+    _baseUrl = clean;
     saveSettings();
   }
 

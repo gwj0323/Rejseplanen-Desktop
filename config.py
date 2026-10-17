@@ -146,11 +146,19 @@ class AppConfig:
 
     @property
     def base_url(self) -> str:
-        return self._data.get("base_url", "https://www.rejseplanen.dk/api").rstrip("/")
+        raw = str(self._data.get("base_url", "https://www.rejseplanen.dk/api")).strip().rstrip("/")
+        if not raw or not raw.lower().startswith("https://"):
+            return "https://www.rejseplanen.dk/api"
+        return raw
 
     @base_url.setter
     def base_url(self, val: str):
-        self.set("base_url", val.strip().rstrip("/"))
+        cleaned = str(val).strip().rstrip("/")
+        if cleaned.lower().startswith("http://"):
+            cleaned = "https://" + cleaned[7:]
+        elif cleaned and not cleaned.lower().startswith("https://"):
+            cleaned = "https://" + cleaned
+        self.set("base_url", cleaned or "https://www.rejseplanen.dk/api")
 
     @property
     def mock_fallback(self) -> bool:

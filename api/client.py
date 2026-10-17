@@ -116,11 +116,29 @@ class RejseplanenClient:
             "Helsingør St.": "A=1@O=Helsingør St.@X=12614167@Y=56033621@U=86@L=8600669@p=1791796388@"
         }
 
+    _MAX_CACHE_ENTRIES = 300
+
     def _get_api_key(self) -> str:
         return config.api_key.strip()
 
     def _get_base_url(self) -> str:
-        return config.base_url.strip()
+        raw = config.base_url.strip().rstrip("/")
+        if not raw.lower().startswith("https://"):
+            return "https://www.rejseplanen.dk/api"
+        return raw
+
+    @staticmethod
+    def _sanitize_error(err: Any) -> str:
+        """Redact accessId query parameter from requests exception messages."""
+        return re.sub(r"accessId=[^&\s'\")]+", "accessId=***", str(err), flags=re.IGNORECASE)
+
+    def _cache_station_id(self, key: str, full_id: str):
+        if not key or not full_id:
+            return
+        if len(self._station_id_cache) >= self._MAX_CACHE_ENTRIES and key not in self._station_id_cache:
+            oldest = next(iter(self._station_id_cache))
+            self._station_id_cache.pop(oldest, None)
+        self._station_id_cache[key] = full_id
 
     def _parse_error(self, resp: requests.Response) -> str:
         """Parse error message from Rejseplanen response (JSON or XML)."""
@@ -159,11 +177,11 @@ class RejseplanenClient:
                     stop = item.get("StopLocation") or item.get("CoordLocation")
                     if stop and "id" in stop:
                         full_id = stop["id"]
-                        self._station_id_cache[query] = full_id
+                        self._cache_station_id(query, full_id)
                         if "extId" in stop:
-                            self._station_id_cache[stop["extId"]] = full_id
+                            self._cache_station_id(stop["extId"], full_id)
                         if "name" in stop:
-                            self._station_id_cache[stop["name"]] = full_id
+                            self._cache_station_id(stop["name"], full_id)
                         return full_id
         except Exception:
             pass
@@ -172,12 +190,18 @@ class RejseplanenClient:
     def test_connection(self, api_key: Optional[str] = None, base_url: Optional[str] = None) -> Tuple[bool, str]:
         """Test API connection with the provided or configured accessId."""
         key = (api_key if api_key is not None else self._get_api_key()).strip()
-        url = (base_url if base_url is not None else self._get_base_url()).rstrip("/")
+        url = (base_url if base_url is not None else self._get_base_url()).strip().rstrip("/")
         
         if not key:
             self.last_error = "API Key 为空"
             self.last_status = "error"
             return False, "API Key (accessId) 为空，请先在上方输入 Key！"
+
+        if not url.lower().startswith("https://"):
+            msg = "安全限制：仅允许使用 https:// 加密接口地址"
+            self.last_error = msg
+            self.last_status = "error"
+            return False, msg
             
         endpoint = f"{url}/location.name"
         params = {
@@ -201,7 +225,7 @@ class RejseplanenClient:
                     msg += "\n\n💡 提示：返回了 401 权限拒绝。可能原因：\n1. accessId 输入有误；\n2. 在 labs.rejseplanen.dk 申请的新账号仍在人工审核中 (Pending)；\n3. 账号权限尚未分配 API 2.0。"
                 return False, msg
         except requests.exceptions.RequestException as e:
-            msg = f"网络请求失败: {str(e)}"
+            msg = f"网络请求失败: {self._sanitize_error(e)}"
             self.last_error = msg
             self.last_status = "error"
             return False, msg
@@ -237,9 +261,9 @@ class RejseplanenClient:
                         ext_id = stop.get("extId", "")
                         name = stop.get("name", "")
                         if full_id and ext_id:
-                            self._station_id_cache[ext_id] = full_id
+                            self._cache_station_id(ext_id, full_id)
                         if full_id and name:
-                            self._station_id_cache[name] = full_id
+                            self._cache_station_id(name, full_id)
                             
                         results.append({
                             "id": full_id or ext_id,
@@ -273,7 +297,7 @@ class RejseplanenClient:
                 self.last_error = err_msg
                 self.last_status = "error"
         except Exception as e:
-            err_msg = f"网络异常: {str(e)}"
+            err_msg = f"网络异常: {self._sanitize_error(e)}"
             self.last_error = err_msg
             self.last_status = "error"
             
@@ -327,7 +351,7 @@ class RejseplanenClient:
                 self.last_error = err_msg
                 self.last_status = "error"
         except Exception as e:
-            err_msg = f"网络异常: {str(e)}"
+            err_msg = f"网络异常: {self._sanitize_error(e)}"
             self.last_error = err_msg
             self.last_status = "error"
             
@@ -427,7 +451,7 @@ class RejseplanenClient:
                 self.last_error = err_msg
                 self.last_status = "error"
         except Exception as e:
-            err_msg = f"网络异常: {str(e)}"
+            err_msg = f"网络异常: {self._sanitize_error(e)}"
             self.last_error = err_msg
             self.last_status = "error"
             
@@ -510,7 +534,7 @@ class RejseplanenClient:
                 self.last_error = err_msg
                 self.last_status = "error"
         except Exception as e:
-            err_msg = f"网络异常: {str(e)}"
+            err_msg = f"网络异常: {self._sanitize_error(e)}"
             self.last_error = err_msg
             self.last_status = "error"
             
@@ -640,7 +664,7 @@ class RejseplanenClient:
                 self.last_error = err_msg
                 self.last_status = "error"
         except Exception as e:
-            err_msg = f"网络异常: {str(e)}"
+            err_msg = f"网络异常: {self._sanitize_error(e)}"
             self.last_error = err_msg
             self.last_status = "error"
             
@@ -714,6 +738,6 @@ class RejseplanenClient:
                     return parsed, False, None
             return [], False, f"HTTP {resp.status_code}: {self._parse_error(resp)}"
         except Exception as e:
-            return [], False, f"网络异常: {str(e)}"
+            return [], False, f"网络异常: {self._sanitize_error(e)}"
 
 api_client = RejseplanenClient()

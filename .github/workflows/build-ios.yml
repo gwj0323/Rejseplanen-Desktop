@@ -45,10 +45,14 @@ jobs:
         working-directory: rejseplanen_mobile
         run: flutter pub get
 
+      - name: Run unit tests
+        working-directory: rejseplanen_mobile
+        run: flutter test
+
       - name: Build iOS Application (Release, no-codesign)
         working-directory: rejseplanen_mobile
         run: |
-          flutter build ios --release --no-codesign --verbose
+          flutter build ios --release --no-codesign
 
       - name: Package into IPA
         working-directory: rejseplanen_mobile

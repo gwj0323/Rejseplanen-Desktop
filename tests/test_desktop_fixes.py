@@ -118,6 +118,17 @@ class AppConfigTest(unittest.TestCase):
         self.assertEqual(cfg.api_key, _fake_key("user"))
         self.assertTrue(os.path.exists(config_module.LEGACY_CONFIG_FILE), "legacy file must not be deleted when a newer config exists")
 
+    def test_base_url_enforces_https(self):
+        cfg = config_module.AppConfig()
+        cfg.base_url = "http://www.rejseplanen.dk/api/"
+        self.assertEqual(cfg.base_url, "https://www.rejseplanen.dk/api")
+        from api.client import RejseplanenClient
+        secret = _fake_key("secret123")
+        raw_err = f"HTTPSConnectionPool: Max retries exceeded with url: /api/location.name?input=CPH&accessId={secret}&format=json"
+        sanitized = RejseplanenClient._sanitize_error(raw_err)
+        self.assertNotIn(secret, sanitized)
+        self.assertIn("accessId=***", sanitized)
+
 
 if __name__ == "__main__":
     unittest.main()

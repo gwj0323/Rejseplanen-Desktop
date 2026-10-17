@@ -280,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: () => setState(() => _obscureKey = !_obscureKey),
                       ),
                     ),
-                    onChanged: (val) => config.setApiKey(val),
+                    onSubmitted: (val) => config.setApiKey(val),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -316,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
-                    onChanged: (val) => config.setBaseUrl(val),
+                    onSubmitted: (val) => config.setBaseUrl(val),
                   ),
                   const SizedBox(height: 14),
 
